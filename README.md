@@ -1,21 +1,23 @@
+<p align="left">
+  <img src="frontend/public/ppp-logo.png" alt="Polyhedral Park Planner logo" width="120" />
+</p>
+
 # Polyhedral Park Planner Web App
 
-Repositorio del TFG.
-- frontend: React + Vite + Chakra UI + MobX
-- backend: NestJS + TypeScript
-- db: PostgreSQL + Prisma
+Repositorio del Trabajo de Fin de Grado del proyecto **Polyhedral Park Planner Web App**.
 
-### Configuración de variables de entorno
+La aplicación está planteada como una arquitectura separada en frontend y backend, con una base de datos PostgreSQL gestionada mediante Prisma. En este repositorio se irá desarrollando tanto la parte cliente como la API y la capa de persistencia.
 
-Por motivos de seguridad, los archivos `.env` no se incluyen en el repositorio.
+## Tecnologías principales
 
-Para ejecutar el proyecto en local:
+- Frontend: React, Vite, Chakra UI y MobX.
+- Backend: NestJS y TypeScript.
+- Base de datos: PostgreSQL y Prisma.
 
-1. Copiar el archivo `.env.example` y renombrarlo como `.env`.
-2. Sustituir los valores de ejemplo por las credenciales reales del entorno de desarrollo.
-3. Ejecutar las migraciones necesarias con Prisma.
+## Estructura del proyecto
 
-```bash
-npx prisma migrate dev
-npm run start:dev
-```
+```text
+polyhedral-park-planner-web-app/
+├── frontend/
+├── backend/
+└── docs/
