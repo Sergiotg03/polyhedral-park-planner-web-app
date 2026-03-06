@@ -1,0 +1,15 @@
+node_modules
+dist
+coverage
+.prisma
+
+.env
+.env.*
+!.env.example
+!.env.development.example
+!.env.production.example
+
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+PasoAPaso.md
