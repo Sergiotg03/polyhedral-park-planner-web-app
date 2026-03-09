@@ -1,14 +1,38 @@
-import { Box, Heading, Text, VStack } from '@chakra-ui/react'
+/*
+https://reactrouter.com/api/components/Routes
+*/
+
+import { Navigate, Route, Routes } from 'react-router-dom'
+import LoginPage from './pages/LoginPage'
+import RegisterPage from './pages/RegisterPage'
+import HomePage from './pages/HomePage'
+import ProtectedRoute from './components/ProtectedRoute'
 
 function App() {
   return (
-    <Box minH="100vh" bg="gray.50" py={10}>
-      <VStack gap={4}>
-        <Heading>Polyhedral Park Planner Web App</Heading>
-        <Text>Frontend funcionando con React, Vite y Chakra UI.</Text>
-      </VStack>
-    </Box>
+    <Routes>
+
+      <Route path="/login" element={
+        <LoginPage />
+      } />
+
+      <Route path="/register" element={
+        <RegisterPage />
+      } />
+
+      <Route path="/" element={
+        <ProtectedRoute>
+          <HomePage />
+        </ProtectedRoute>
+      } />
+
+      <Route path="*" element={
+        <Navigate to="/" replace />
+      } />
+
+    </Routes>
   )
 }
 
 export default App
+
