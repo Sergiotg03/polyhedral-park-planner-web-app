@@ -6,7 +6,7 @@ export class AppController {
   constructor(private readonly appService: AppService) {}
 
   @Get()
-  getPolyhedral(): string {
+  getPolyhedral() {
     return this.appService.getPolyhedral();
   }
 }
