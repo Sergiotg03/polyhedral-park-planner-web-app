@@ -15,8 +15,11 @@ describe('AppController', () => {
   });
 
   describe('root', () => {
-    it('should return "Hello World!"', () => {
-      expect(appController.getHello()).toBe('Hello World!');
+    it('should return backend status information', () => {
+      expect(appController.getPolyhedral()).toEqual({
+        name: 'Polyhedral Park Planner Web App Backend',
+        status: 'OK',
+      });
     });
   });
 });

@@ -6,6 +6,7 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import HomePage from './pages/HomePage'
+import GameSessionPage from './pages/GameSessionPage'
 import ProtectedRoute from './components/ProtectedRoute'
 
 function App() {
@@ -26,6 +27,12 @@ function App() {
         </ProtectedRoute>
       } />
 
+      <Route path="/game-sessions/:id" element={
+        <ProtectedRoute>
+          <GameSessionPage />
+        </ProtectedRoute>
+      } />
+
       <Route path="*" element={
         <Navigate to="/" replace />
       } />
@@ -35,4 +42,3 @@ function App() {
 }
 
 export default App
-
