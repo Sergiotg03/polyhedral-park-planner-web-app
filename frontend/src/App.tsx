@@ -12,31 +12,25 @@ import ProtectedRoute from './components/ProtectedRoute'
 function App() {
   return (
     <Routes>
-
-      <Route path="/login" element={
-        <LoginPage />
-      } />
-
-      <Route path="/register" element={
-        <RegisterPage />
-      } />
-
-      <Route path="/" element={
-        <ProtectedRoute>
-          <HomePage />
-        </ProtectedRoute>
-      } />
-
-      <Route path="/game-sessions/:id" element={
-        <ProtectedRoute>
-          <GameSessionPage />
-        </ProtectedRoute>
-      } />
-
-      <Route path="*" element={
-        <Navigate to="/" replace />
-      } />
-
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
+      <Route
+        path="/"
+        element={
+          <ProtectedRoute>
+            <HomePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/game-sessions/:id"
+        element={
+          <ProtectedRoute>
+            <GameSessionPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
 }

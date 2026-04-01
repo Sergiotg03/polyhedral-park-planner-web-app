@@ -28,7 +28,7 @@ const DEVELOPMENT_REFERENCE: Array<{
   label: string
   range: string
 }> = [
-  { type: 'TREE', label: 'Arbol', range: '1-4' },
+  { type: 'TREE', label: 'Árbol', range: '1-4' },
   { type: 'PATH', label: 'Camino', range: '5-8' },
   { type: 'WATER', label: 'Agua', range: '9-12' },
   { type: 'BENCH', label: 'Banco', range: '13+' },

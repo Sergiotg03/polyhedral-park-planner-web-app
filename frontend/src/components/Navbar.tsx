@@ -56,7 +56,7 @@ function Navbar({ username, showAuthLinks = false, onLogout }: Props) {
                 <RouterLink to="/register">Registrarse</RouterLink>
               </Link>
             </HStack>
-          ) : (
+          ) : username && onLogout ? (
             <HStack gap={4} flexShrink={0}>
               <Text color="green.700" fontWeight="medium">
                 {username}
@@ -72,7 +72,7 @@ function Navbar({ username, showAuthLinks = false, onLogout }: Props) {
                 Cerrar sesión
               </Button>
             </HStack>
-          )}
+          ) : null}
         </HStack>
       </PageContainer>
     </Box>

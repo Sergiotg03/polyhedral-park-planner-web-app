@@ -13,7 +13,7 @@ type DiceIconProps = {
 
 export function TreeIcon(props: IconProps) {
   return (
-    <svg viewBox="0 0 100 100" role="img" aria-label="Arbol" {...props}>
+    <svg viewBox="0 0 100 100" role="img" aria-label="Árbol" {...props}>
       <rect x="4" y="4" width="92" height="92" fill="#d0d0d0" stroke="#999" />
       <path
         d="M48 78 L54 78 L57 46 L45 46 Z"

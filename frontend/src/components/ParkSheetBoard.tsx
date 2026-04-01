@@ -10,17 +10,9 @@ type Props = {
   gameState: GameState
 }
 
-// decide que texto se pinta dentro de cada celda
-function getCellLabel(cell: ParkCell) {
-  if (cell.kind === 'INFO_BOOTH') {
-    return null
-  }
-
-  return cell.printedValue
-}
-
 // marca el borde grueso de la zona cercana a la casilla de info
 function getVicinityBorder(cell: ParkCell) {
+  // en las hojas esta zona es la matriz 3x3 del centro
   const isInInfoBoothVicinity =
     cell.row >= 4 && cell.row <= 6 && cell.column >= 4 && cell.column <= 6
 
@@ -90,7 +82,7 @@ function ParkSheetBoard({ gameState }: Props) {
                 i
               </Box>
             ) : (
-              <Text lineHeight="1">{getCellLabel(cell)}</Text>
+              <Text lineHeight="1">{cell.printedValue}</Text>
             )}
           </Box>
         )

@@ -5,10 +5,9 @@ export type ParkSheetDefinition = {
   values: ReadonlyArray<ReadonlyArray<number | null>>;
 };
 
-// localización de casilla de info y tamaño del tablero 9x9
+// localización de casilla de info
 export const INFO_BOOTH_ROW = 5;
 export const INFO_BOOTH_COLUMN = 5;
-export const PARK_GRID_SIZE = 9;
 
 // todas las hojas (autogenerado con ia a partir del pdf de sheets)
 export const PARK_SHEETS: readonly ParkSheetDefinition[] = [

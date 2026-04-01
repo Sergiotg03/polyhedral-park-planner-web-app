@@ -44,9 +44,8 @@ function HomePage() {
 
         const data: User = await response.json()
         setUser(data)
-      } catch (err) {
+      } catch {
         localStorage.removeItem(TOKEN_KEY)
-        setError(err instanceof Error ? err.message : 'Error inesperado')
         navigate('/login')
       } finally {
         setLoading(false)
