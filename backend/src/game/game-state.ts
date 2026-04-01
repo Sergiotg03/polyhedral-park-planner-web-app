@@ -1,7 +1,6 @@
 import {
   INFO_BOOTH_COLUMN,
   INFO_BOOTH_ROW,
-  PARK_GRID_SIZE,
   type ParkSheetDefinition,
 } from './data/park-sheets';
 
@@ -13,6 +12,17 @@ export const TOTAL_ROUNDS = 10;
 export type DevelopmentType = 'TREE' | 'PATH' | 'WATER' | 'BENCH';
 export type ParkCellKind = 'PARK' | 'INFO_BOOTH';
 export type GameSessionStatusValue = 'IN_PROGRESS' | 'COMPLETED' | 'ABANDONED';
+export type DiceType = 'D4' | 'D6' | 'D8' | 'D10' | 'D12' | 'D20';
+
+// dados que se usan en cada ronda
+export const GAME_DICE: ReadonlyArray<{ type: DiceType; sides: number }> = [
+  { type: 'D4', sides: 4 },
+  { type: 'D6', sides: 6 },
+  { type: 'D8', sides: 8 },
+  { type: 'D10', sides: 10 },
+  { type: 'D12', sides: 12 },
+  { type: 'D20', sides: 20 },
+];
 
 // info de cada casilla del tablero
 export type ParkCellState = {
@@ -23,10 +33,18 @@ export type ParkCellState = {
   development: DevelopmentType | null;
 };
 
+// resultado de cada dado
+export type DiceState = {
+  type: DiceType;
+  sides: number;
+  value: number;
+  used: boolean;
+};
+
 // info de cada ronda
 export type RoundState = {
   roundNumber: number;
-  diceValues: number[] | null;
+  dice: DiceState[] | null;
   completed: boolean;
 };
 
@@ -73,8 +91,18 @@ function buildInitialBoard(sheet: ParkSheetDefinition): ParkCellState[][] {
 function buildInitialRounds(): RoundState[] {
   return Array.from({ length: TOTAL_ROUNDS }, (_, index) => ({
     roundNumber: index + 1,
-    diceValues: null,
+    dice: null,
     completed: false,
+  }));
+}
+
+// tira todos los dados oficiales, el d10 devuelve 1-10
+export function rollRoundDice(random = Math.random): DiceState[] {
+  return GAME_DICE.map((dice) => ({
+    type: dice.type,
+    sides: dice.sides,
+    value: Math.floor(random() * dice.sides) + 1,
+    used: false,
   }));
 }
 

@@ -28,15 +28,15 @@ export class GameSessionsController {
     return this.gameSessionsService.create(req.user.id);
   }
 
-  // lista las partidas del usuario conectado
-  @Get()
-  findAll(@Req() req: AuthenticatedRequest) {
-    return this.gameSessionsService.findAllForUser(req.user.id);
-  }
-
   // carga una partida concreta solo si pertenece al usuario
   @Get(':id')
   findOne(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     return this.gameSessionsService.findOneForUser(req.user.id, id);
+  }
+
+  // registra la tirada de dados de la ronda actual
+  @Post(':id/roll-dice')
+  rollDice(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
+    return this.gameSessionsService.rollDice(req.user.id, id);
   }
 }
