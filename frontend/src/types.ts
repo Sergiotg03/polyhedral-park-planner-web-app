@@ -26,10 +26,17 @@ export type Dice = {
   used: boolean
 }
 
+// elementos desbloqueados en una ronda concreta
+export type RoundDevelopment = {
+  type: DevelopmentType
+  placedCount: number
+}
+
 // datos basicos de cada ronda
 export type GameRound = {
   roundNumber: number
   dice: Dice[] | null
+  unlockedDevelopments: RoundDevelopment[]
   completed: boolean
 }
 

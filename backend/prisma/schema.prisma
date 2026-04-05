@@ -22,7 +22,6 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  // partidas que pertenecen al usuario
   gameSessions GameSession[]
 }
 

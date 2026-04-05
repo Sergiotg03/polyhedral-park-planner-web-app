@@ -3,10 +3,22 @@ https://docs.nestjs.com/controllers
 https://docs.nestjs.com/guards
 */
 
-import { Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import type { Request } from 'express';
 import { GameSessionsService } from './game-sessions.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import {
+  PlaceDevelopmentDto,
+  UnlockDevelopmentDto,
+} from './dto/game-actions.dto';
 
 // request cuando jwt ya ha metido el usuario autenticado
 type AuthenticatedRequest = Request & {
@@ -38,5 +50,39 @@ export class GameSessionsController {
   @Post(':id/roll-dice')
   rollDice(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     return this.gameSessionsService.rollDice(req.user.id, id);
+  }
+
+  // desbloquea uno de los elementos con los dados seleccionados
+  @Post(':id/unlock-development')
+  unlockDevelopment(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Body() unlockDevelopmentDto: UnlockDevelopmentDto,
+  ) {
+    return this.gameSessionsService.unlockDevelopment(
+      req.user.id,
+      id,
+      unlockDevelopmentDto,
+    );
+  }
+
+  // coloca un elemento ya desbloqueado en el tablero
+  @Post(':id/place-development')
+  placeDevelopment(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Body() placeDevelopmentDto: PlaceDevelopmentDto,
+  ) {
+    return this.gameSessionsService.placeDevelopment(
+      req.user.id,
+      id,
+      placeDevelopmentDto,
+    );
+  }
+
+  // termina la ronda cuando ya no quedan jugadas validas
+  @Post(':id/advance-round')
+  advanceRound(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
+    return this.gameSessionsService.advanceRound(req.user.id, id);
   }
 }
