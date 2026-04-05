@@ -5,6 +5,7 @@ type IconProps = SVGProps<SVGSVGElement>
 type DiceIconProps = {
   type: DiceType
   value?: number | null
+  used?: boolean
   width?: string | number
   height?: string | number
   numberFontSize?: string | number
@@ -14,7 +15,7 @@ type DiceIconProps = {
 export function TreeIcon(props: IconProps) {
   return (
     <svg viewBox="0 0 100 100" role="img" aria-label="Árbol" {...props}>
-      <rect x="4" y="4" width="92" height="92" fill="#d0d0d0" stroke="#999" />
+      <g transform="translate(50 50) scale(1.12) translate(-50 -50)">
       <path
         d="M48 78 L54 78 L57 46 L45 46 Z"
         fill="#5c8f1f"
@@ -39,6 +40,7 @@ export function TreeIcon(props: IconProps) {
         />
       ))}
       <path d="M31 82 L72 82 L52 76 Z" fill="#5c8f1f" stroke="#1f2f12" />
+      </g>
     </svg>
   )
 }
@@ -46,16 +48,15 @@ export function TreeIcon(props: IconProps) {
 export function PathIcon(props: IconProps) {
   return (
     <svg viewBox="0 0 100 100" role="img" aria-label="Camino" {...props}>
-      <rect x="4" y="4" width="92" height="92" fill="#d0d0d0" stroke="#999" />
-      {[50, 25, 75, 50, 50].map((cx, index) => (
+      {[50, 22, 78, 50, 50].map((cx, index) => (
         <circle
           key={`${cx}-${index}`}
           cx={cx}
-          cy={[22, 50, 50, 50, 78][index]}
-          r="12"
+          cy={[20, 50, 50, 50, 80][index]}
+          r="8"
           fill="none"
           stroke="#666"
-          strokeWidth="5"
+          strokeWidth="4"
         />
       ))}
     </svg>
@@ -64,8 +65,7 @@ export function PathIcon(props: IconProps) {
 
 export function WaterIcon(props: IconProps) {
   return (
-    <svg viewBox="0 0 100 100" role="img" aria-label="Agua" {...props}>
-      <rect x="4" y="4" width="92" height="92" fill="#d0d0d0" stroke="#999" />
+    <svg viewBox="9 15 86 74" role="img" aria-label="Agua" {...props}>
       <path
         d="M15 38 L38 22 L46 36 L61 25 L69 38 L81 27 L90 41 L73 56 L65 43 L48 57 L40 44 L24 56 L15 50 Z"
         fill="#455be8"
@@ -84,8 +84,7 @@ export function WaterIcon(props: IconProps) {
 
 export function BenchIcon(props: IconProps) {
   return (
-    <svg viewBox="0 0 100 100" role="img" aria-label="Banco" {...props}>
-      <rect x="4" y="4" width="92" height="92" fill="#d0d0d0" stroke="#999" />
+    <svg viewBox="10 24 80 62" role="img" aria-label="Banco" {...props}>
       <rect x="20" y="32" width="60" height="13" fill="#8b5a2b" stroke="#222" />
       <rect x="16" y="58" width="68" height="7" fill="#8b5a2b" stroke="#222" />
       <rect x="25" y="68" width="7" height="12" fill="#8b5a2b" stroke="#222" />
@@ -176,13 +175,14 @@ const diceNumberTop: Record<DiceType, string> = {
 export function DiceIcon({
   type,
   value,
+  used = false,
   width,
   height,
   numberFontSize,
   numberFontWeight,
 }: DiceIconProps) {
   const size = width ?? '88px'
-  const hasValue = typeof value === 'number'
+  const hasValue = typeof value === 'number' && !used
   const numberSize = numberFontSize ?? (hasValue && value >= 10 ? '24px' : '28px')
   const currentFacetColors = hasValue ? facetColors : disabledFacetColors
   const fillColor = hasValue ? '#38b84c' : '#b8bec7'
@@ -190,7 +190,9 @@ export function DiceIcon({
 
   return (
     <span
-      aria-label={hasValue ? `${type}: ${value}` : `${type}: pendiente`}
+      aria-label={
+        used ? `${type}: usado` : hasValue ? `${type}: ${value}` : `${type}: pendiente`
+      }
       role="img"
       style={{
         alignItems: 'center',
@@ -249,6 +251,25 @@ export function DiceIcon({
           }}
         >
           {value}
+        </span>
+      )}
+
+      {used && (
+        <span
+          aria-hidden="true"
+          style={{
+            color: '#333333',
+            fontFamily: 'Arial, Helvetica, sans-serif',
+            fontSize: '40px',
+            fontWeight: 900,
+            left: '50%',
+            lineHeight: 1,
+            position: 'absolute',
+            top: '52%',
+            transform: 'translate(-50%, -50%)',
+          }}
+        >
+          X
         </span>
       )}
     </span>
