@@ -7,6 +7,7 @@ import {
 // ronda inicial y totales
 export const INITIAL_ROUND = 1;
 export const TOTAL_ROUNDS = 10;
+export const MAX_DICE_MODIFICATIONS = 12;
 
 // tipos de elementos, si es parque o info, y status de partida
 export type DevelopmentType = 'TREE' | 'PATH' | 'WATER' | 'BENCH';
