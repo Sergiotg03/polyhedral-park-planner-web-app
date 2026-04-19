@@ -2,6 +2,7 @@ node_modules
 dist
 coverage
 .prisma
+.codex-pdf-tools
 
 .env
 .env.*

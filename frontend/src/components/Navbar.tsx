@@ -32,14 +32,18 @@ function Navbar({ username, showAuthLinks = false, onLogout }: Props) {
       <PageContainer py={4}>
         <HStack justify="space-between" align="center" gap={4}>
           <HStack gap={3} minW={0}>
-            <Image
-              src={logo}
-              alt="Polyhedral Park Planner"
-              h={{ base: '36px', md: '44px' }}
-              w="auto"
-              objectFit="contain"
-              flexShrink={0}
-            />
+            <Link asChild aria-label="Volver al menu principal">
+              <RouterLink to="/">
+                <Image
+                  src={logo}
+                  alt="Polyhedral Park Planner"
+                  h={{ base: '36px', md: '44px' }}
+                  w="auto"
+                  objectFit="contain"
+                  flexShrink={0}
+                />
+              </RouterLink>
+            </Link>
           </HStack>
 
           {showAuthLinks ? (
@@ -52,7 +56,7 @@ function Navbar({ username, showAuthLinks = false, onLogout }: Props) {
                 <RouterLink to="/register">Registrarse</RouterLink>
               </Link>
             </HStack>
-          ) : (
+          ) : username && onLogout ? (
             <HStack gap={4} flexShrink={0}>
               <Text color="green.700" fontWeight="medium">
                 {username}
@@ -68,7 +72,7 @@ function Navbar({ username, showAuthLinks = false, onLogout }: Props) {
                 Cerrar sesión
               </Button>
             </HStack>
-          )}
+          ) : null}
         </HStack>
       </PageContainer>
     </Box>
