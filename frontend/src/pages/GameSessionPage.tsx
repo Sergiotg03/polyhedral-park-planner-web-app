@@ -49,6 +49,7 @@ const DEVELOPMENT_REFERENCE: DevelopmentReference[] = [
 
 // dados oficiales que se muestran aunque aun no se hayan tirado
 const DICE_REFERENCE: DiceType[] = ['D4', 'D6', 'D8', 'D10', 'D12', 'D20']
+const MAX_DICE_MODIFICATIONS = 12
 
 type VisibleDice = {
   type: DiceType
@@ -56,7 +57,7 @@ type VisibleDice = {
   used: boolean
 }
 
-type ActionLoading = 'roll' | 'unlock' | 'place' | 'advance' | null
+type ActionLoading = 'roll' | 'modify' | 'unlock' | 'place' | 'advance' | null
 
 // crea una clave unica para poder marcar casillas del tablero
 function getCellKey(cell: Pick<ParkCell, 'row' | 'column'>) {
@@ -175,6 +176,22 @@ function GameSessionPage() {
 
   // suma que se usa para desbloquear o colocar
   const selectedDiceSum = getDiceSum(selectedDice)
+  const selectedSingleDice = selectedDice.length === 1 ? selectedDice[0] : null
+  const diceModificationsUsed =
+    gameSession?.state.penalties.diceModifications ?? 0
+
+  // solo se puede modificar un dado cada vez y como maximo 12 veces
+  const canModifySelectedDice =
+    selectedSingleDice !== null &&
+    Boolean(activeRound?.dice) &&
+    diceModificationsUsed < MAX_DICE_MODIFICATIONS
+  const canDecreaseSelectedDice =
+    selectedSingleDice !== null &&
+    canModifySelectedDice &&
+    selectedSingleDice.value > 1
+  const canIncreaseSelectedDice =
+    selectedSingleDice !== null &&
+    canModifySelectedDice
 
   // elemento que se podria desbloquear con esa suma
   const unlockableDevelopmentType =
@@ -387,6 +404,27 @@ function GameSessionPage() {
     })
   }
 
+  // cambia el valor de un dado y apunta la penalizacion en el servidor
+  const handleModifyDice = async (delta: -1 | 1) => {
+    if (!selectedSingleDice) {
+      return
+    }
+
+    const updatedSession = await sendGameAction(
+      'modify-dice',
+      'modify',
+      'No se pudo modificar el dado',
+      {
+        diceType: selectedSingleDice.type,
+        delta,
+      },
+    )
+
+    if (updatedSession) {
+      setSelectedDiceTypes([selectedSingleDice.type])
+    }
+  }
+
   // usa los dados seleccionados para desbloquear el elemento marcado en verde
   const handleUnlockDevelopment = async (developmentType: DevelopmentType) => {
     if (!canUnlockSelectedDevelopment || developmentType !== highlightedDevelopmentType) {
@@ -461,11 +499,13 @@ function GameSessionPage() {
     )
   }
 
-  // pagina con tooda la partida -_-
+  // pagina con tooooda la partida :)
   return (
     <Box minH="100vh" bg="gray.50">
+      {/* barra superior con el logo, usuario y cerrar sesion */}
       <Navbar username={user?.username} onLogout={handleLogout} />
 
+      {/* contenedor general de la pantalla */}
       <PageContainer py={{ base: 8, md: 10 }}>
         {pageError || !gameSession ? (
           <Box
@@ -475,6 +515,7 @@ function GameSessionPage() {
             borderRadius="md"
             p={{ base: 5, md: 8 }}
           >
+            {/* mensaje cuando la partida no se puede cargar */}
             <VStack gap={4}>
               <Heading size="md" color="gray.800">
                 No se puede abrir esta partida
@@ -491,6 +532,7 @@ function GameSessionPage() {
             borderRadius="md"
             p={{ base: 4, md: 6 }}
           >
+            {/* cabecera con datos de partida y rondas */}
             <HStack
               justify="space-between"
               align={{ base: 'flex-start', md: 'center' }}
@@ -550,11 +592,13 @@ function GameSessionPage() {
               </HStack>
             </HStack>
 
+            {/* zona principal con tablero y paneles de acciones */}
             <Grid
               templateColumns={{ base: '1fr', xl: 'minmax(0, 1fr) 620px' }}
               gap={6}
-              alignItems="start"
+              alignItems="stretch"
             >
+              {/* tablero de la hoja actual */}
               <Box>
                 <ParkSheetBoard
                   gameState={gameSession.state}
@@ -563,12 +607,20 @@ function GameSessionPage() {
                 />
               </Box>
 
-              <VStack align="stretch" gap={4}>
+              {/* columna derecha de controles de la ronda */}
+              <VStack
+                align="stretch"
+                alignSelf="start"
+                gap={3}
+                maxH={{ xl: '620px' }}
+                w="full"
+              >
+                {/* ventana de dados y suma seleccionada */}
                 <Box
                   border="1px solid"
                   borderColor="blackAlpha.200"
                   borderRadius="md"
-                  p={4}
+                  p={3}
                 >
                   <HStack
                     justify="space-between"
@@ -639,8 +691,8 @@ function GameSessionPage() {
                             type={dice.type}
                             value={dice.value}
                             used={dice.used}
-                            width="82px"
-                            height="82px"
+                            width="78px"
+                            height="78px"
                             numberFontSize="30px"
                           />
                           <Text
@@ -676,11 +728,94 @@ function GameSessionPage() {
                   </HStack>
                 </Box>
 
+                {/* ventana de modificadores y penalizaciones */}
                 <Box
                   border="1px solid"
                   borderColor="blackAlpha.200"
                   borderRadius="md"
-                  p={4}
+                  p={3}
+                >
+                  <HStack
+                    justify="space-between"
+                    gap={3}
+                    flexWrap="wrap"
+                    align="center"
+                    mb={3}
+                  >
+                    <Heading size="sm" color="gray.800">
+                      Penalizaciones
+                    </Heading>
+
+                    <Text color="gray.700" fontSize="sm" fontWeight="medium">
+                      {diceModificationsUsed}/{MAX_DICE_MODIFICATIONS}
+                    </Text>
+                  </HStack>
+
+                  <HStack gap={2} mb={3}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={!canDecreaseSelectedDice}
+                      loading={actionLoading === 'modify'}
+                      onClick={() => handleModifyDice(-1)}
+                    >
+                      -1
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={!canIncreaseSelectedDice}
+                      loading={actionLoading === 'modify'}
+                      onClick={() => handleModifyDice(1)}
+                    >
+                      +1
+                    </Button>
+                  </HStack>
+
+                  <Grid
+                    templateColumns={`repeat(${MAX_DICE_MODIFICATIONS}, minmax(0, 1fr))`}
+                    gap={1}
+                    w="full"
+                  >
+                    {Array.from(
+                      { length: MAX_DICE_MODIFICATIONS },
+                      (_, index) => {
+                        // cada X representa una modificacion de dado usada
+                        const isMarked = index < diceModificationsUsed
+
+                        return (
+                          <Box
+                            key={index}
+                            display="flex"
+                            alignItems="center"
+                            justifyContent="center"
+                            w="full"
+                            h="22px"
+                            border="1px solid"
+                            borderColor={isMarked ? 'red.600' : 'gray.300'}
+                            bg={isMarked ? 'red.100' : 'white'}
+                            color={isMarked ? 'red.700' : 'transparent'}
+                            borderRadius="sm"
+                            fontSize="sm"
+                            fontWeight="bold"
+                          >
+                            X
+                          </Box>
+                        )
+                      },
+                    )}
+                  </Grid>
+                </Box>
+
+                {/* ventana de elementos disponibles */}
+                <Box
+                  border="1px solid"
+                  borderColor="blackAlpha.200"
+                  borderRadius="md"
+                  p={3}
+                  flex="1"
+                  display="flex"
+                  flexDirection="column"
                 >
                   <Heading size="sm" color="gray.800" mb={3}>
                     Elementos disponibles
@@ -692,8 +827,9 @@ function GameSessionPage() {
                       md: 'repeat(4, minmax(0, 1fr))',
                     }}
                     gap={3}
-                    alignItems="start"
+                    alignItems="center"
                     w="full"
+                    flex="1"
                   >
                     {DEVELOPMENT_REFERENCE.map((development) => {
                       // estado visual de cada elemento desbloqueable
@@ -757,8 +893,8 @@ function GameSessionPage() {
                         >
                           <DevelopmentIcon
                             type={development.type}
-                            width="86px"
-                            height="86px"
+                            width="80px"
+                            height="80px"
                           />
                           <Text
                             color="gray.900"
@@ -777,27 +913,34 @@ function GameSessionPage() {
                           >
                             {development.label}
                           </Text>
-                          {isUnlocked && (
-                            <Text color="green.700" fontSize="xs" mt={1}>
-                              Colocados: {roundDevelopment?.placedCount ?? 0}
-                            </Text>
-                          )}
-                          {statusText && (
-                            <Text
-                              color={canUnlockThis ? 'orange.700' : 'green.700'}
-                              fontSize="xs"
-                              fontWeight="bold"
-                              mt={1}
-                            >
-                              {statusText}
-                            </Text>
-                          )}
+                          <Text
+                            color="green.700"
+                            fontSize="xs"
+                            mt={1}
+                            h="16px"
+                            lineHeight="16px"
+                          >
+                            {isUnlocked
+                              ? `Colocados: ${roundDevelopment?.placedCount ?? 0}`
+                              : ' '}
+                          </Text>
+                          <Text
+                            color={canUnlockThis ? 'orange.700' : 'green.700'}
+                            fontSize="xs"
+                            fontWeight="bold"
+                            mt={1}
+                            h="16px"
+                            lineHeight="16px"
+                          >
+                            {statusText || ' '}
+                          </Text>
                         </Box>
                       )
                     })}
                   </Grid>
                 </Box>
 
+                {/* mensaje de error de alguna accion */}
                 {actionError && (
                   <Box
                     border="1px solid"
