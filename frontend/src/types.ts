@@ -9,6 +9,13 @@ export type DevelopmentType = 'TREE' | 'PATH' | 'WATER' | 'BENCH'
 export type ParkCellKind = 'PARK' | 'INFO_BOOTH'
 export type DiceType = 'D4' | 'D6' | 'D8' | 'D10' | 'D12' | 'D20'
 
+// carta de puntuacion elegida para la partida
+export type ScoringCard = {
+  id: string
+  title: string
+  imageFile: string
+}
+
 // celda del tablero que viene del backend
 export type ParkCell = {
   row: number
@@ -51,6 +58,7 @@ export type GameState = {
     name: string
   }
   board: ParkCell[][]
+  scoringCards: ScoringCard[]
   rounds: GameRound[]
   penalties: {
     diceModifications: number

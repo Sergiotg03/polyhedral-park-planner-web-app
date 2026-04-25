@@ -11,6 +11,7 @@ import {
 import { GameSessionStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { selectRandomParkSheet } from './data/park-sheets';
+import { selectRandomScoringCards } from './data/scoring-cards';
 import {
   INITIAL_ROUND,
   MAX_DICE_MODIFICATIONS,
@@ -52,6 +53,7 @@ function normalizeGameState(state: GameState) {
   };
   state.penalties.diceModifications ??= 0;
   state.penalties.isolatedRegions ??= 0;
+  state.scoringCards ??= selectRandomScoringCards();
 
   return state;
 }

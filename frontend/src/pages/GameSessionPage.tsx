@@ -12,6 +12,7 @@ import {
   Grid,
   Heading,
   HStack,
+  Image,
   Spinner,
   Text,
   VStack,
@@ -20,6 +21,7 @@ import { DevelopmentIcon, DiceIcon } from '../components/GameIcons'
 import Navbar from '../components/Navbar'
 import PageContainer from '../components/PageContainer'
 import ParkSheetBoard from '../components/ParkSheetBoard'
+import { SCORING_CARD_IMAGES } from '../assets/scoring-card-images'
 import { API_URL, TOKEN_KEY } from '../config'
 import type {
   DevelopmentType,
@@ -956,6 +958,44 @@ function GameSessionPage() {
                 )}
               </VStack>
             </Grid>
+
+            {/* cartas de puntuacion elegidas para esta partida */}
+            <Box mt={6}>
+              <Heading size="md" color="green.700" mb={3}>
+                Cartas de puntuacion
+              </Heading>
+
+              <Grid
+                templateColumns={{
+                  base: '1fr',
+                  md: 'repeat(3, minmax(0, 1fr))',
+                }}
+                gap={4}
+              >
+                {gameSession.state.scoringCards.map((scoringCard) => {
+                  // imagen que corresponde con el id guardado en la partida
+                  const imageSrc = SCORING_CARD_IMAGES[scoringCard.id]
+
+                  return (
+                    <Box
+                      key={scoringCard.id}
+                      border="1px solid"
+                      borderColor="blackAlpha.200"
+                      borderRadius="md"
+                      bg="white"
+                      p={2}
+                    >
+                      <Image
+                        src={imageSrc}
+                        alt={scoringCard.title}
+                        w="full"
+                        borderRadius="sm"
+                      />
+                    </Box>
+                  )
+                })}
+              </Grid>
+            </Box>
           </Box>
         )}
       </PageContainer>

@@ -3,6 +3,10 @@ import {
   INFO_BOOTH_ROW,
   type ParkSheetDefinition,
 } from './data/park-sheets';
+import {
+  selectRandomScoringCards,
+  type ScoringCardDefinition,
+} from './data/scoring-cards';
 
 // ronda inicial y totales
 export const INITIAL_ROUND = 1;
@@ -14,6 +18,7 @@ export type DevelopmentType = 'TREE' | 'PATH' | 'WATER' | 'BENCH';
 export type ParkCellKind = 'PARK' | 'INFO_BOOTH';
 export type GameSessionStatusValue = 'IN_PROGRESS' | 'COMPLETED' | 'ABANDONED';
 export type DiceType = 'D4' | 'D6' | 'D8' | 'D10' | 'D12' | 'D20';
+export type ScoringCardState = ScoringCardDefinition;
 
 export const DEVELOPMENT_TYPES: ReadonlyArray<DevelopmentType> = [
   'TREE',
@@ -85,6 +90,7 @@ export type GameState = {
     name: string;
   };
   board: ParkCellState[][];
+  scoringCards: ScoringCardState[];
   rounds: RoundState[];
   penalties: {
     diceModifications: number;
@@ -160,6 +166,7 @@ export function buildInitialGameState(sheet: ParkSheetDefinition): GameState {
       name: sheet.name,
     },
     board: buildInitialBoard(sheet),
+    scoringCards: selectRandomScoringCards(),
     rounds: buildInitialRounds(),
     penalties: {
       diceModifications: 0,
