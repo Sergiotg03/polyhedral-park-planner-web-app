@@ -79,7 +79,40 @@ export type RoundState = {
   completed: boolean;
 };
 
-// info de la partida (staus, ronda actual, totales, hoja, penalizaciones, puntuaciónnd)
+// resultado de una carta en el desglose final
+export type ScoringCardScoreState = {
+  cardId: string;
+  title: string;
+  points: number;
+  detail: string;
+};
+
+// requisito gris de una carta para ganar en solitario
+export type VictoryObjectiveState = {
+  cardId: string;
+  title: string;
+  requirement: string;
+  fulfilled: boolean;
+  detail: string;
+};
+
+// puntuacion final de la partida
+export type ScoreState = {
+  cards: ScoringCardScoreState[];
+  penalties: {
+    diceModifications: number;
+    isolatedRegions: number;
+    isolatedRegionCount: number;
+  };
+  soloTarget: number;
+  soloTargetBreakdown: string;
+  soloTargetReached: boolean;
+  victoryObjectives: VictoryObjectiveState[];
+  victoryAchieved: boolean;
+  total: number;
+};
+
+// info de la partida (status, ronda actual, totales, hoja, penalizaciones y puntuacion)
 export type GameState = {
   version: 1;
   status: GameSessionStatusValue;
@@ -94,9 +127,8 @@ export type GameState = {
   rounds: RoundState[];
   penalties: {
     diceModifications: number;
-    isolatedRegions: number;
   };
-  score: null;
+  score: ScoreState | null;
 };
 
 // recorre la matriz, convierte cada número en una celda con fila, columna, valor impreso y elemento, y crea el tablero
@@ -170,7 +202,6 @@ export function buildInitialGameState(sheet: ParkSheetDefinition): GameState {
     rounds: buildInitialRounds(),
     penalties: {
       diceModifications: 0,
-      isolatedRegions: 0,
     },
     score: null,
   };

@@ -1,7 +1,7 @@
 export type ScoringCardDefinition = {
   id: string;
   title: string;
-  imageFile: string;
+  soloTarget: number;
 };
 
 // cartas de puntuacion
@@ -9,62 +9,62 @@ export const SCORING_CARDS: ReadonlyArray<ScoringCardDefinition> = [
   {
     id: '01-un-camino-largo-y-sinuoso',
     title: 'Un camino largo y sinuoso',
-    imageFile: '01-un-camino-largo-y-sinuoso.png',
+    soloTarget: 11,
   },
   {
     id: '02-el-bosque-de-los-cien-acres',
     title: 'El bosque de los cien acres',
-    imageFile: '02-el-bosque-de-los-cien-acres.png',
+    soloTarget: 12,
   },
   {
     id: '03-de-mar-a-mar',
     title: 'De mar a mar',
-    imageFile: '03-de-mar-a-mar.png',
+    soloTarget: 13,
   },
   {
     id: '04-los-mejores-asientos-de-la-casa',
     title: 'Los mejores asientos de la casa',
-    imageFile: '04-los-mejores-asientos-de-la-casa.png',
+    soloTarget: 14,
   },
   {
     id: '05-fronteras-naturales',
     title: 'Fronteras naturales',
-    imageFile: '05-fronteras-naturales.png',
+    soloTarget: 14,
   },
   {
     id: '06-puentes-sobre-aguas-turbulentas',
     title: 'Puentes sobre aguas turbulentas',
-    imageFile: '06-puentes-sobre-aguas-turbulentas.png',
+    soloTarget: 15,
   },
   {
     id: '07-un-lugar-sombreado-para-descansar',
     title: 'Un lugar sombreado para descansar',
-    imageFile: '07-un-lugar-sombreado-para-descansar.png',
+    soloTarget: 16,
   },
   {
     id: '08-de-pesca',
     title: 'De pesca',
-    imageFile: '08-de-pesca.png',
+    soloTarget: 18,
   },
   {
     id: '09-centro-de-atencion',
     title: 'Centro de atencion',
-    imageFile: '09-centro-de-atencion.png',
+    soloTarget: 16,
   },
   {
     id: '10-un-poco-de-todo',
     title: 'Un poco de todo',
-    imageFile: '10-un-poco-de-todo.png',
+    soloTarget: 14,
   },
   {
     id: '11-un-paseo-para-recordar',
     title: 'Un paseo para recordar',
-    imageFile: '11-un-paseo-para-recordar.png',
+    soloTarget: 12,
   },
   {
     id: '12-paradas-frecuentes',
     title: 'Paradas frecuentes',
-    imageFile: '12-paradas-frecuentes.png',
+    soloTarget: 20,
   },
 ];
 

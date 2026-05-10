@@ -11,7 +11,8 @@ import {
 import { GameSessionStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { selectRandomParkSheet } from './data/park-sheets';
-import { selectRandomScoringCards } from './data/scoring-cards';
+import { SCORING_CARDS, selectRandomScoringCards } from './data/scoring-cards';
+import { calculateFinalScore } from './game-scoring';
 import {
   INITIAL_ROUND,
   MAX_DICE_MODIFICATIONS,
@@ -49,11 +50,19 @@ function normalizeGameState(state: GameState) {
 
   state.penalties ??= {
     diceModifications: 0,
-    isolatedRegions: 0,
   };
   state.penalties.diceModifications ??= 0;
-  state.penalties.isolatedRegions ??= 0;
-  state.scoringCards ??= selectRandomScoringCards();
+  state.scoringCards =
+    state.scoringCards?.map((card) => {
+      return (
+        SCORING_CARDS.find((officialCard) => officialCard.id === card.id) ??
+        card
+      );
+    }) ?? selectRandomScoringCards();
+
+  if (state.status === 'COMPLETED') {
+    state.score = calculateFinalScore(state);
+  }
 
   return state;
 }
@@ -422,6 +431,7 @@ export class GameSessionsService {
 
     if (state.currentRound >= state.totalRounds) {
       state.status = 'COMPLETED';
+      state.score = calculateFinalScore(state);
 
       return this.prisma.gameSession.update({
         where: { id: gameSession.id },

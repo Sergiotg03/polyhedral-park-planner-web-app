@@ -43,7 +43,7 @@ type DevelopmentReference = {
 
 // elementos y rangos que se pueden desbloquear con los dados
 const DEVELOPMENT_REFERENCE: DevelopmentReference[] = [
-  { type: 'TREE', label: 'Arbol', range: '1-4', min: 1, max: 4 },
+  { type: 'TREE', label: 'Árbol', range: '1-4', min: 1, max: 4 },
   { type: 'PATH', label: 'Camino', range: '5-8', min: 5, max: 8 },
   { type: 'WATER', label: 'Agua', range: '9-12', min: 9, max: 12 },
   { type: 'BENCH', label: 'Banco', range: '13+', min: 13, max: null },
@@ -144,6 +144,7 @@ function GameSessionPage() {
   const [actionLoading, setActionLoading] = useState<ActionLoading>(null)
   const [pageError, setPageError] = useState('')
   const [actionError, setActionError] = useState('')
+  const [isScoreModalOpen, setIsScoreModalOpen] = useState(false)
   const [selectedDiceTypes, setSelectedDiceTypes] = useState<DiceType[]>([])
   const [selectedDevelopmentType, setSelectedDevelopmentType] =
     useState<DevelopmentType | null>(null)
@@ -158,6 +159,13 @@ function GameSessionPage() {
   const unlockedDevelopments = activeRound?.unlockedDevelopments ?? []
   const activeDice = activeRound?.dice ?? []
   const unusedDice = activeDice.filter((dice) => !dice.used)
+  const isGameCompleted =
+    gameSession?.status === 'COMPLETED' ||
+    gameSession?.state.status === 'COMPLETED'
+  const isFinalRound =
+    (gameSession?.state.currentRound ?? 0) >=
+    (gameSession?.state.totalRounds ?? 1)
+  const finalScore = gameSession?.state.score ?? null
 
   // si aun no se han tirado dados, se pintan los dados vacios en gris
   const visibleDice: VisibleDice[] =
@@ -186,6 +194,7 @@ function GameSessionPage() {
   const canModifySelectedDice =
     selectedSingleDice !== null &&
     Boolean(activeRound?.dice) &&
+    !isGameCompleted &&
     diceModificationsUsed < MAX_DICE_MODIFICATIONS
   const canDecreaseSelectedDice =
     selectedSingleDice !== null &&
@@ -206,6 +215,7 @@ function GameSessionPage() {
   // valida en cliente si la seleccion puede desbloquear algo
   const canUnlockSelectedDevelopment =
     Boolean(activeRound?.dice) &&
+    !isGameCompleted &&
     Boolean(unlockableDevelopmentType) &&
     !unlockedDevelopments.some(
       (development) => development.type === unlockableDevelopmentType,
@@ -220,6 +230,7 @@ function GameSessionPage() {
   // valida en cliente si hay elemento y dados para colocar
   const canPlaceSelectedDevelopment =
     Boolean(gameSession) &&
+    !isGameCompleted &&
     Boolean(selectedDevelopmentType) &&
     selectedDice.length > 0 &&
     unlockedDevelopments.some(
@@ -257,6 +268,7 @@ function GameSessionPage() {
   // muestra el boton cuando se puede cerrar la ronda
   const canAdvanceRound =
     Boolean(activeRound?.dice) &&
+    !isGameCompleted &&
     (unusedDice.length === 0 ||
       (!hasPlaceActionAvailable && !hasUnlockActionAvailable))
 
@@ -474,6 +486,10 @@ function GameSessionPage() {
 
   // pasa a la siguiente ronda cuando ya no queda nada util
   const handleAdvanceRound = async () => {
+    if (isGameCompleted) {
+      return
+    }
+
     const updatedSession = await sendGameAction(
       'advance-round',
       'advance',
@@ -483,6 +499,10 @@ function GameSessionPage() {
     if (updatedSession) {
       setSelectedDiceTypes([])
       setSelectedDevelopmentType(null)
+
+      if (updatedSession.state.score) {
+        setIsScoreModalOpen(true)
+      }
     }
   }
 
@@ -547,10 +567,6 @@ function GameSessionPage() {
                   Partida
                 </Heading>
                 <Text color="gray.600">ID: {gameSession.id}</Text>
-                <Text color="gray.600">
-                  Ronda {gameSession.state.currentRound} de{' '}
-                  {gameSession.state.totalRounds}
-                </Text>
               </Box>
 
               <HStack gap={2} flexWrap="wrap">
@@ -593,6 +609,22 @@ function GameSessionPage() {
                 })}
               </HStack>
             </HStack>
+
+            {/* mensaje de error de alguna accion */}
+            {actionError && (
+              <Box
+                border="1px solid"
+                borderColor="red.200"
+                bg="red.50"
+                borderRadius="md"
+                p={3}
+                mb={4}
+              >
+                <Text color="red.700" fontSize="sm">
+                  {actionError}
+                </Text>
+              </Box>
+            )}
 
             {/* zona principal con tablero y paneles de acciones */}
             <Grid
@@ -648,7 +680,7 @@ function GameSessionPage() {
                       color="white"
                       _hover={{ bg: 'green.700' }}
                       loading={actionLoading === 'roll'}
-                      disabled={Boolean(activeRound?.dice)}
+                      disabled={Boolean(activeRound?.dice) || isGameCompleted}
                       onClick={handleRollDice}
                     >
                       Tirar dados
@@ -685,9 +717,17 @@ function GameSessionPage() {
                           borderColor={isSelected ? 'green.600' : 'transparent'}
                           borderRadius="md"
                           bg={isSelected ? 'green.50' : 'white'}
-                          cursor={canSelect ? 'pointer' : 'default'}
+                          cursor={
+                            canSelect && !isGameCompleted
+                              ? 'pointer'
+                              : 'default'
+                          }
                           p={1}
-                          onClick={() => handleToggleDice(dice)}
+                          onClick={() => {
+                            if (!isGameCompleted) {
+                              handleToggleDice(dice)
+                            }
+                          }}
                         >
                           <DiceIcon
                             type={dice.type}
@@ -715,18 +755,39 @@ function GameSessionPage() {
                       Suma seleccionada: {selectedDiceSum || '-'}
                     </Text>
 
-                    {canAdvanceRound && (
-                      <Button
-                        size="sm"
-                        bg="green.600"
-                        color="white"
-                        _hover={{ bg: 'green.700' }}
-                        loading={actionLoading === 'advance'}
-                        onClick={handleAdvanceRound}
-                      >
-                        Avanzar ronda
-                      </Button>
-                    )}
+                    <HStack gap={2}>
+                      {gameSession.state.score && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setIsScoreModalOpen(true)}
+                        >
+                          Ver puntuación
+                        </Button>
+                      )}
+
+                      {(canAdvanceRound || isGameCompleted) && (
+                        <Button
+                          size="sm"
+                          bg={isGameCompleted ? 'gray.300' : 'green.600'}
+                          color={isGameCompleted ? 'gray.700' : 'white'}
+                          _hover={{
+                            bg: isGameCompleted ? 'gray.300' : 'green.700',
+                          }}
+                          disabled={
+                            isGameCompleted || actionLoading === 'advance'
+                          }
+                          loading={actionLoading === 'advance'}
+                          onClick={handleAdvanceRound}
+                        >
+                          {isGameCompleted
+                            ? 'Partida finalizada'
+                            : isFinalRound
+                              ? 'Finalizar partida'
+                              : 'Avanzar ronda'}
+                        </Button>
+                      )}
+                    </HStack>
                   </HStack>
                 </Box>
 
@@ -879,10 +940,16 @@ function GameSessionPage() {
                           borderRadius="md"
                           bg={bgColor}
                           cursor={
-                            canUnlockThis || isUnlocked ? 'pointer' : 'default'
+                            !isGameCompleted && (canUnlockThis || isUnlocked)
+                              ? 'pointer'
+                              : 'default'
                           }
                           p={2}
                           onClick={() => {
+                            if (isGameCompleted) {
+                              return
+                            }
+
                             if (canUnlockThis) {
                               handleUnlockDevelopment(development.type)
                               return
@@ -942,27 +1009,13 @@ function GameSessionPage() {
                   </Grid>
                 </Box>
 
-                {/* mensaje de error de alguna accion */}
-                {actionError && (
-                  <Box
-                    border="1px solid"
-                    borderColor="red.200"
-                    bg="red.50"
-                    borderRadius="md"
-                    p={3}
-                  >
-                    <Text color="red.700" fontSize="sm">
-                      {actionError}
-                    </Text>
-                  </Box>
-                )}
               </VStack>
             </Grid>
 
             {/* cartas de puntuacion elegidas para esta partida */}
             <Box mt={6}>
               <Heading size="md" color="green.700" mb={3}>
-                Cartas de puntuacion
+                Cartas de puntuación
               </Heading>
 
               <Grid
@@ -995,10 +1048,250 @@ function GameSessionPage() {
                   )
                 })}
               </Grid>
+
+              {!gameSession.state.score && (
+                <Text color="gray.600" fontSize="sm" mt={3}>
+                  La puntuación se calculará al terminar la partida.
+                </Text>
+              )}
             </Box>
           </Box>
         )}
       </PageContainer>
+
+      {/* modal con el desglose final de la partida */}
+      {isScoreModalOpen && finalScore && (
+        <Box
+          position="fixed"
+          inset={0}
+          zIndex={20}
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+          bg="blackAlpha.500"
+          p={4}
+        >
+          <Box
+            bg="white"
+            borderRadius="md"
+            boxShadow="xl"
+            maxW="720px"
+            w="full"
+            maxH="90vh"
+            overflowY="auto"
+            p={{ base: 4, md: 6 }}
+          >
+            <HStack justify="space-between" align="flex-start" gap={4} mb={4}>
+              <Box>
+                <Heading size="md" color="green.700">
+                  Desglose de puntuación
+                </Heading>
+                <Text color="gray.600" fontSize="sm">
+                  Resultado final de la partida
+                </Text>
+              </Box>
+
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setIsScoreModalOpen(false)}
+              >
+                Cerrar
+              </Button>
+            </HStack>
+
+            <VStack align="stretch" gap={3}>
+              {finalScore.cards.map((cardScore) => (
+                <HStack
+                  key={cardScore.cardId}
+                  justify="space-between"
+                  align="flex-start"
+                  gap={4}
+                >
+                  <Box>
+                    <Text color="gray.800" fontWeight="bold">
+                      {cardScore.title}
+                    </Text>
+                    <Text color="gray.600" fontSize="sm">
+                      {cardScore.detail}
+                    </Text>
+                  </Box>
+                  <Text color="green.700" fontWeight="bold">
+                    {cardScore.points}
+                  </Text>
+                </HStack>
+              ))}
+
+              <Box borderTop="1px solid" borderColor="blackAlpha.200" />
+
+              <HStack justify="space-between">
+                <Text color="gray.700">Penalizacion por modificar dados</Text>
+                <Text color="red.700" fontWeight="bold">
+                  -{finalScore.penalties.diceModifications}
+                </Text>
+              </HStack>
+
+              <HStack justify="space-between">
+                <Box>
+                  <Text color="gray.700">
+                    Penalizacion por regiones fuera de la vecindad
+                  </Text>
+                  <Text color="gray.500" fontSize="xs">
+                    {finalScore.penalties.isolatedRegionCount}{' '}
+                    regiones x 3 puntos
+                  </Text>
+                </Box>
+                <Text color="red.700" fontWeight="bold">
+                  -{finalScore.penalties.isolatedRegions}
+                </Text>
+              </HStack>
+
+              <Box>
+                <Heading size="sm" color="gray.800" mb={2}>
+                  Objetivos de victoria
+                </Heading>
+
+                <VStack align="stretch" gap={2}>
+                  <Box
+                    border="1px solid"
+                    borderColor="blackAlpha.200"
+                    borderRadius="md"
+                    p={3}
+                  >
+                    <HStack justify="space-between" align="flex-start" gap={4}>
+                      <Box>
+                        <Text color="gray.800" fontWeight="bold">
+                          Suma de puntos objetivo
+                        </Text>
+                        <Text color="gray.700" fontSize="sm">
+                          La puntuación final debe alcanzar la suma de las tres
+                          cartas.
+                        </Text>
+                        <Text color="gray.500" fontSize="xs">
+                          {finalScore.soloTargetBreakdown} ={' '}
+                          {finalScore.soloTarget}
+                        </Text>
+                      </Box>
+
+                      <Box
+                        px={2}
+                        py={1}
+                        borderRadius="sm"
+                        bg={
+                          finalScore.soloTargetReached
+                            ? 'green.100'
+                            : 'red.100'
+                        }
+                        color={
+                          finalScore.soloTargetReached
+                            ? 'green.700'
+                            : 'red.700'
+                        }
+                        fontSize="xs"
+                        fontWeight="bold"
+                        flexShrink={0}
+                      >
+                        {finalScore.soloTargetReached
+                          ? 'Cumplido'
+                          : 'No cumplido'}
+                      </Box>
+                    </HStack>
+                  </Box>
+
+                  {finalScore.victoryObjectives.map((objective) => (
+                    <Box
+                      key={objective.cardId}
+                      border="1px solid"
+                      borderColor="blackAlpha.200"
+                      borderRadius="md"
+                      p={3}
+                    >
+                      <HStack justify="space-between" align="flex-start" gap={4}>
+                        <Box>
+                          <Text color="gray.800" fontWeight="bold">
+                            {objective.title}
+                          </Text>
+                          <Text color="gray.700" fontSize="sm">
+                            {objective.requirement}
+                          </Text>
+                          <Text color="gray.500" fontSize="xs">
+                            {objective.detail}
+                          </Text>
+                        </Box>
+
+                        <Box
+                          px={2}
+                          py={1}
+                          borderRadius="sm"
+                          bg={
+                            objective.fulfilled ? 'green.100' : 'red.100'
+                          }
+                          color={
+                            objective.fulfilled ? 'green.700' : 'red.700'
+                          }
+                          fontSize="xs"
+                          fontWeight="bold"
+                          flexShrink={0}
+                        >
+                          {objective.fulfilled ? 'Cumplido' : 'No cumplido'}
+                        </Box>
+                      </HStack>
+                    </Box>
+                  ))}
+                </VStack>
+              </Box>
+
+              <HStack
+                justify="space-between"
+                borderTop="1px solid"
+                borderColor="blackAlpha.200"
+                pt={3}
+              >
+                <Text color="gray.900" fontWeight="bold">
+                  Total
+                </Text>
+                <Text color="green.700" fontSize="2xl" fontWeight="bold">
+                  {finalScore.total}
+                </Text>
+              </HStack>
+
+              <Box
+                border="1px solid"
+                borderColor={
+                  finalScore.victoryAchieved
+                    ? 'green.200'
+                    : 'orange.200'
+                }
+                bg={
+                  finalScore.victoryAchieved
+                    ? 'green.50'
+                    : 'orange.50'
+                }
+                borderRadius="md"
+                p={3}
+              >
+                <Text
+                  color={
+                    finalScore.victoryAchieved
+                      ? 'green.700'
+                      : 'orange.700'
+                  }
+                  fontSize="sm"
+                  fontWeight="bold"
+                >
+                  {finalScore.victoryAchieved
+                    ? 'Has ganado la partida.'
+                    : 'No has cumplido todos los objetivos de victoria.'}
+                </Text>
+                <Text color="gray.600" fontSize="xs" mt={1}>
+                  Para ganar hay que alcanzar la suma de puntos y cumplir los
+                  criterios grises de las tres cartas.
+                </Text>
+              </Box>
+            </VStack>
+          </Box>
+        </Box>
+      )}
     </Box>
   )
 }
