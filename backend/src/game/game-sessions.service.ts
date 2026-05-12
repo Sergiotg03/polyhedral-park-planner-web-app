@@ -11,8 +11,11 @@ import {
 import { GameSessionStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { selectRandomParkSheet } from './data/park-sheets';
+import { SCORING_CARDS, selectRandomScoringCards } from './data/scoring-cards';
+import { calculateFinalScore } from './game-scoring';
 import {
   INITIAL_ROUND,
+  MAX_DICE_MODIFICATIONS,
   buildInitialGameState,
   getDevelopmentForUnlockValue,
   rollRoundDice,
@@ -29,6 +32,11 @@ type GameSessionActionData = {
   diceTypes: DiceType[];
 };
 
+type ModifyDiceData = {
+  diceType: DiceType;
+  delta: -1 | 1;
+};
+
 type PlaceDevelopmentData = GameSessionActionData & {
   row: number;
   column: number;
@@ -39,6 +47,22 @@ function normalizeGameState(state: GameState) {
   state.rounds.forEach((round) => {
     round.unlockedDevelopments ??= [];
   });
+
+  state.penalties ??= {
+    diceModifications: 0,
+  };
+  state.penalties.diceModifications ??= 0;
+  state.scoringCards =
+    state.scoringCards?.map((card) => {
+      return (
+        SCORING_CARDS.find((officialCard) => officialCard.id === card.id) ??
+        card
+      );
+    }) ?? selectRandomScoringCards();
+
+  if (state.status === 'COMPLETED') {
+    state.score = calculateFinalScore(state);
+  }
 
   return state;
 }
@@ -83,6 +107,13 @@ function getSelectedUnusedDice(round: RoundState, diceTypes: DiceType[]) {
   });
 
   return selectedDice;
+}
+
+// busca un solo dado para poder modificarlo
+function getUnusedDiceForModification(round: RoundState, diceType: DiceType) {
+  const [dice] = getSelectedUnusedDice(round, [diceType]);
+
+  return dice;
 }
 
 // suma los valores de los dados seleccionados
@@ -242,6 +273,41 @@ export class GameSessionsService {
     });
   }
 
+  // modifica un dado en +1 o -1 y apunta una penalizacion
+  async modifyDice(userId: string, id: string, actionData: ModifyDiceData) {
+    const gameSession = await this.findOneForUser(userId, id);
+
+    if (gameSession.status !== GameSessionStatus.IN_PROGRESS) {
+      throw new BadRequestException('La partida no esta en curso');
+    }
+
+    const state = normalizeGameState(gameSession.state as unknown as GameState);
+    const currentRound = getCurrentRound(state);
+    const dice = getUnusedDiceForModification(
+      currentRound,
+      actionData.diceType,
+    );
+    const nextValue = dice.value + actionData.delta;
+
+    if (state.penalties.diceModifications >= MAX_DICE_MODIFICATIONS) {
+      throw new BadRequestException('No quedan modificaciones de dados');
+    }
+
+    if (nextValue < 1) {
+      throw new BadRequestException('El dado no puede bajar de 1');
+    }
+
+    dice.value = nextValue;
+    state.penalties.diceModifications += 1;
+
+    return this.prisma.gameSession.update({
+      where: { id: gameSession.id },
+      data: {
+        state: state as unknown as Prisma.InputJsonValue,
+      },
+    });
+  }
+
   // desbloquea un elemento gastando uno o varios dados
   async unlockDevelopment(
     userId: string,
@@ -365,6 +431,7 @@ export class GameSessionsService {
 
     if (state.currentRound >= state.totalRounds) {
       state.status = 'COMPLETED';
+      state.score = calculateFinalScore(state);
 
       return this.prisma.gameSession.update({
         where: { id: gameSession.id },

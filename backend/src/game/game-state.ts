@@ -3,16 +3,22 @@ import {
   INFO_BOOTH_ROW,
   type ParkSheetDefinition,
 } from './data/park-sheets';
+import {
+  selectRandomScoringCards,
+  type ScoringCardDefinition,
+} from './data/scoring-cards';
 
 // ronda inicial y totales
 export const INITIAL_ROUND = 1;
 export const TOTAL_ROUNDS = 10;
+export const MAX_DICE_MODIFICATIONS = 12;
 
 // tipos de elementos, si es parque o info, y status de partida
 export type DevelopmentType = 'TREE' | 'PATH' | 'WATER' | 'BENCH';
 export type ParkCellKind = 'PARK' | 'INFO_BOOTH';
 export type GameSessionStatusValue = 'IN_PROGRESS' | 'COMPLETED' | 'ABANDONED';
 export type DiceType = 'D4' | 'D6' | 'D8' | 'D10' | 'D12' | 'D20';
+export type ScoringCardState = ScoringCardDefinition;
 
 export const DEVELOPMENT_TYPES: ReadonlyArray<DevelopmentType> = [
   'TREE',
@@ -73,7 +79,40 @@ export type RoundState = {
   completed: boolean;
 };
 
-// info de la partida (staus, ronda actual, totales, hoja, penalizaciones, puntuaciónnd)
+// resultado de una carta en el desglose final
+export type ScoringCardScoreState = {
+  cardId: string;
+  title: string;
+  points: number;
+  detail: string;
+};
+
+// requisito gris de una carta para ganar en solitario
+export type VictoryObjectiveState = {
+  cardId: string;
+  title: string;
+  requirement: string;
+  fulfilled: boolean;
+  detail: string;
+};
+
+// puntuacion final de la partida
+export type ScoreState = {
+  cards: ScoringCardScoreState[];
+  penalties: {
+    diceModifications: number;
+    isolatedRegions: number;
+    isolatedRegionCount: number;
+  };
+  soloTarget: number;
+  soloTargetBreakdown: string;
+  soloTargetReached: boolean;
+  victoryObjectives: VictoryObjectiveState[];
+  victoryAchieved: boolean;
+  total: number;
+};
+
+// info de la partida (status, ronda actual, totales, hoja, penalizaciones y puntuacion)
 export type GameState = {
   version: 1;
   status: GameSessionStatusValue;
@@ -84,12 +123,12 @@ export type GameState = {
     name: string;
   };
   board: ParkCellState[][];
+  scoringCards: ScoringCardState[];
   rounds: RoundState[];
   penalties: {
     diceModifications: number;
-    isolatedRegions: number;
   };
-  score: null;
+  score: ScoreState | null;
 };
 
 // recorre la matriz, convierte cada número en una celda con fila, columna, valor impreso y elemento, y crea el tablero
@@ -159,10 +198,10 @@ export function buildInitialGameState(sheet: ParkSheetDefinition): GameState {
       name: sheet.name,
     },
     board: buildInitialBoard(sheet),
+    scoringCards: selectRandomScoringCards(),
     rounds: buildInitialRounds(),
     penalties: {
       diceModifications: 0,
-      isolatedRegions: 0,
     },
     score: null,
   };

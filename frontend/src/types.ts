@@ -9,6 +9,46 @@ export type DevelopmentType = 'TREE' | 'PATH' | 'WATER' | 'BENCH'
 export type ParkCellKind = 'PARK' | 'INFO_BOOTH'
 export type DiceType = 'D4' | 'D6' | 'D8' | 'D10' | 'D12' | 'D20'
 
+// carta de puntuacion elegida para la partida
+export type ScoringCard = {
+  id: string
+  title: string
+  soloTarget: number
+}
+
+// puntuacion de cada carta al final de la partida
+export type ScoringCardScore = {
+  cardId: string
+  title: string
+  points: number
+  detail: string
+}
+
+// requisito gris de una carta para ganar en solitario
+export type VictoryObjective = {
+  cardId: string
+  title: string
+  requirement: string
+  fulfilled: boolean
+  detail: string
+}
+
+// desglose final de puntuacion
+export type Score = {
+  cards: ScoringCardScore[]
+  penalties: {
+    diceModifications: number
+    isolatedRegions: number
+    isolatedRegionCount: number
+  }
+  soloTarget: number
+  soloTargetBreakdown: string
+  soloTargetReached: boolean
+  victoryObjectives: VictoryObjective[]
+  victoryAchieved: boolean
+  total: number
+}
+
 // celda del tablero que viene del backend
 export type ParkCell = {
   row: number
@@ -51,12 +91,12 @@ export type GameState = {
     name: string
   }
   board: ParkCell[][]
+  scoringCards: ScoringCard[]
   rounds: GameRound[]
   penalties: {
     diceModifications: number
-    isolatedRegions: number
   }
-  score: null
+  score: Score | null
 }
 
 // partida completa devuelta por la api

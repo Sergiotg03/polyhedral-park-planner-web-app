@@ -18,23 +18,32 @@ const DICE_TYPES = GAME_DICE.map((dice) => dice.type);
 
 export class UnlockDevelopmentDto {
   @IsIn(DEVELOPMENT_TYPES)
-  developmentType: DevelopmentType;
+  developmentType!: DevelopmentType;
 
   @IsArray()
   @ArrayMinSize(1)
   @ArrayUnique()
   @IsIn(DICE_TYPES, { each: true })
-  diceTypes: DiceType[];
+  diceTypes!: DiceType[];
 }
 
 export class PlaceDevelopmentDto extends UnlockDevelopmentDto {
   @IsInt()
   @Min(1)
   @Max(9)
-  row: number;
+  row!: number;
 
   @IsInt()
   @Min(1)
   @Max(9)
-  column: number;
+  column!: number;
+}
+
+export class ModifyDiceDto {
+  @IsIn(DICE_TYPES)
+  diceType!: DiceType;
+
+  @IsInt()
+  @IsIn([-1, 1])
+  delta!: -1 | 1;
 }

@@ -16,6 +16,7 @@ import type { Request } from 'express';
 import { GameSessionsService } from './game-sessions.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import {
+  ModifyDiceDto,
   PlaceDevelopmentDto,
   UnlockDevelopmentDto,
 } from './dto/game-actions.dto';
@@ -50,6 +51,16 @@ export class GameSessionsController {
   @Post(':id/roll-dice')
   rollDice(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     return this.gameSessionsService.rollDice(req.user.id, id);
+  }
+
+  // modifica un dado de la ronda y suma la penalizacion
+  @Post(':id/modify-dice')
+  modifyDice(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Body() modifyDiceDto: ModifyDiceDto,
+  ) {
+    return this.gameSessionsService.modifyDice(req.user.id, id, modifyDiceDto);
   }
 
   // desbloquea uno de los elementos con los dados seleccionados
