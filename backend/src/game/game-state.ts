@@ -87,8 +87,8 @@ export type ScoringCardScoreState = {
   detail: string;
 };
 
-// requisito gris de una carta para ganar en solitario
-export type VictoryObjectiveState = {
+// requisito de una carta para ganar en solitario
+export type VictoryRequirementState = {
   cardId: string;
   title: string;
   requirement: string;
@@ -107,7 +107,7 @@ export type ScoreState = {
   soloTarget: number;
   soloTargetBreakdown: string;
   soloTargetReached: boolean;
-  victoryObjectives: VictoryObjectiveState[];
+  victoryRequirements: VictoryRequirementState[];
   victoryAchieved: boolean;
   total: number;
 };

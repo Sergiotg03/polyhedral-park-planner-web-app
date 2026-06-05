@@ -1148,7 +1148,7 @@ function GameSessionPage() {
 
               <Box>
                 <Heading size="sm" color="gray.800" mb={2}>
-                  Objetivos de victoria
+                  Requisitos de victoria
                 </Heading>
 
                 <VStack align="stretch" gap={2}>
@@ -1161,7 +1161,7 @@ function GameSessionPage() {
                     <HStack justify="space-between" align="flex-start" gap={4}>
                       <Box>
                         <Text color="gray.800" fontWeight="bold">
-                          Suma de puntos objetivo
+                          Suma minima de puntos
                         </Text>
                         <Text color="gray.700" fontSize="sm">
                           La puntuación final debe alcanzar la suma de las tres
@@ -1198,9 +1198,9 @@ function GameSessionPage() {
                     </HStack>
                   </Box>
 
-                  {finalScore.victoryObjectives.map((objective) => (
+                  {finalScore.victoryRequirements.map((requirement) => (
                     <Box
-                      key={objective.cardId}
+                      key={requirement.cardId}
                       border="1px solid"
                       borderColor="blackAlpha.200"
                       borderRadius="md"
@@ -1209,13 +1209,13 @@ function GameSessionPage() {
                       <HStack justify="space-between" align="flex-start" gap={4}>
                         <Box>
                           <Text color="gray.800" fontWeight="bold">
-                            {objective.title}
+                            {requirement.title}
                           </Text>
                           <Text color="gray.700" fontSize="sm">
-                            {objective.requirement}
+                            {requirement.requirement}
                           </Text>
                           <Text color="gray.500" fontSize="xs">
-                            {objective.detail}
+                            {requirement.detail}
                           </Text>
                         </Box>
 
@@ -1224,16 +1224,16 @@ function GameSessionPage() {
                           py={1}
                           borderRadius="sm"
                           bg={
-                            objective.fulfilled ? 'green.100' : 'red.100'
+                            requirement.fulfilled ? 'green.100' : 'red.100'
                           }
                           color={
-                            objective.fulfilled ? 'green.700' : 'red.700'
+                            requirement.fulfilled ? 'green.700' : 'red.700'
                           }
                           fontSize="xs"
                           fontWeight="bold"
                           flexShrink={0}
                         >
-                          {objective.fulfilled ? 'Cumplido' : 'No cumplido'}
+                          {requirement.fulfilled ? 'Cumplido' : 'No cumplido'}
                         </Box>
                       </HStack>
                     </Box>
@@ -1281,11 +1281,11 @@ function GameSessionPage() {
                 >
                   {finalScore.victoryAchieved
                     ? 'Has ganado la partida.'
-                    : 'No has cumplido todos los objetivos de victoria.'}
+                    : 'No has cumplido todos los requisitos de victoria.'}
                 </Text>
                 <Text color="gray.600" fontSize="xs" mt={1}>
                   Para ganar hay que alcanzar la suma de puntos y cumplir los
-                  criterios grises de las tres cartas.
+                  requisitos de las tres cartas.
                 </Text>
               </Box>
             </VStack>

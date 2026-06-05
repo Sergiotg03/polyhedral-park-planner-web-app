@@ -24,8 +24,8 @@ export type ScoringCardScore = {
   detail: string
 }
 
-// requisito gris de una carta para ganar en solitario
-export type VictoryObjective = {
+// requisito de una carta para ganar en solitario
+export type VictoryRequirement = {
   cardId: string
   title: string
   requirement: string
@@ -44,7 +44,7 @@ export type Score = {
   soloTarget: number
   soloTargetBreakdown: string
   soloTargetReached: boolean
-  victoryObjectives: VictoryObjective[]
+  victoryRequirements: VictoryRequirement[]
   victoryAchieved: boolean
   total: number
 }

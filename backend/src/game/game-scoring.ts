@@ -5,7 +5,7 @@ import type {
   ParkCellState,
   ScoreState,
   ScoringCardScoreState,
-  VictoryObjectiveState,
+  VictoryRequirementState,
 } from './game-state';
 
 type Direction = {
@@ -351,7 +351,7 @@ function scoreLargestTreeRectangle(state: GameState) {
 
   return {
     points: bestArea,
-    detail: `Bosque rectangular mas grande: ${bestArea} árboles`,
+    detail: `Bosque rectangular mas grande: ${bestArea} arboles`,
   };
 }
 
@@ -439,7 +439,7 @@ function scoreShadedBenches(state: GameState) {
 
   return {
     points: shadedBenches * 2,
-    detail: `${shadedBenches} bancos con al menos dos árboles cerca`,
+    detail: `${shadedBenches} bancos con al menos dos arboles cerca`,
   };
 }
 
@@ -520,23 +520,23 @@ function scoreFrequentStops(state: GameState) {
   };
 }
 
-type VictoryObjectiveResult = Pick<
-  VictoryObjectiveState,
+type VictoryRequirementResult = Pick<
+  VictoryRequirementState,
   'requirement' | 'fulfilled' | 'detail'
 >;
 
-// para cartas que solo tienen objetivo de puntos
-function noExtraVictoryObjective(): VictoryObjectiveResult {
+// para cartas que solo tienen requisito de puntuacion
+function noExtraVictoryRequirement(): VictoryRequirementResult {
   return {
-    requirement: 'Sin requisito gris adicional.',
+    requirement: 'Sin requisito adicional.',
     fulfilled: true,
-    detail: 'Solo cuenta para la suma de puntos objetivo.',
+    detail: 'Solo cuenta para la suma minima de puntos.',
   };
 }
 
 
-// objetivo carta 1
-function checkLongPathObjective(state: GameState): VictoryObjectiveResult {
+// requisito carta 1
+function checkLongPathRequirement(state: GameState): VictoryRequirementResult {
   const pathComponents = getConnectedComponents(
     getCellsByDevelopment(state, 'PATH'),
   );
@@ -557,8 +557,10 @@ function checkLongPathObjective(state: GameState): VictoryObjectiveResult {
   };
 }
 
-// objetivo carta 2
-function checkCornerForestObjective(state: GameState): VictoryObjectiveResult {
+// requisito carta 2
+function checkCornerForestRequirement(
+  state: GameState,
+): VictoryRequirementResult {
   const treeComponents = getConnectedComponents(
     getCellsByDevelopment(state, 'TREE'),
   );
@@ -576,8 +578,8 @@ function checkCornerForestObjective(state: GameState): VictoryObjectiveResult {
   };
 }
 
-// objetivo carta 3
-function checkOneLakeObjective(state: GameState): VictoryObjectiveResult {
+// requisito carta 3
+function checkOneLakeRequirement(state: GameState): VictoryRequirementResult {
   const lakeCount = getConnectedComponents(
     getCellsByDevelopment(state, 'WATER'),
   ).length;
@@ -589,8 +591,10 @@ function checkOneLakeObjective(state: GameState): VictoryObjectiveResult {
   };
 }
 
-// objetivo carta 5
-function checkFullBorderObjective(state: GameState): VictoryObjectiveResult {
+// requisito carta 5
+function checkFullBorderRequirement(
+  state: GameState,
+): VictoryRequirementResult {
   const topSide = state.board[0];
   const bottomSide = state.board[8];
   const leftSide = state.board.map((row) => row[0]);
@@ -606,8 +610,8 @@ function checkFullBorderObjective(state: GameState): VictoryObjectiveResult {
   };
 }
 
-// objetivo carta 6
-function checkBridgeObjective(state: GameState): VictoryObjectiveResult {
+// requisito carta 6
+function checkBridgeRequirement(state: GameState): VictoryRequirementResult {
   const bridges = getBridgeCounts(state);
 
   return {
@@ -618,8 +622,8 @@ function checkBridgeObjective(state: GameState): VictoryObjectiveResult {
   };
 }
 
-// objetivo carta 8
-function checkFishingObjective(state: GameState): VictoryObjectiveResult {
+// requisito carta 8
+function checkFishingRequirement(state: GameState): VictoryRequirementResult {
   const benchScores = getFishingBenchScores(state);
   const bestBench = Math.max(0, ...benchScores);
 
@@ -631,10 +635,10 @@ function checkFishingObjective(state: GameState): VictoryObjectiveResult {
   };
 }
 
-// objetivo carta 9
-function checkInformationCenterObjective(
+// requisito carta 9
+function checkInformationCenterRequirement(
   state: GameState,
-): VictoryObjectiveResult {
+): VictoryRequirementResult {
   const developmentTypes = new Set(
     getAllCells(state)
       .filter(isInInfoBoothVicinity)
@@ -650,8 +654,10 @@ function checkInformationCenterObjective(
   };
 }
 
-// objetivo carta 10
-function checkOneOfEverythingObjective(state: GameState): VictoryObjectiveResult {
+// requisito carta 10
+function checkOneOfEverythingRequirement(
+  state: GameState,
+): VictoryRequirementResult {
   const treeCount = countDevelopment(state, 'TREE');
   const pathCount = countDevelopment(state, 'PATH');
   const waterCount = countDevelopment(state, 'WATER');
@@ -661,12 +667,14 @@ function checkOneOfEverythingObjective(state: GameState): VictoryObjectiveResult
   return {
     requirement: 'Debe contener al menos 5 de cada tipo de construccion.',
     fulfilled: minimumCount >= 5,
-    detail: `${treeCount} árboles, ${pathCount} caminos, ${waterCount} aguas y ${benchCount} bancos`,
+    detail: `${treeCount} arboles, ${pathCount} caminos, ${waterCount} aguas y ${benchCount} bancos`,
   };
 }
 
-// objetivo carta 11
-function checkShadedPathObjective(state: GameState): VictoryObjectiveResult {
+// requisito carta 11
+function checkShadedPathRequirement(
+  state: GameState,
+): VictoryRequirementResult {
   const shadedPathInVicinity = getCellsByDevelopment(state, 'PATH').some(
     (cell) => isInInfoBoothVicinity(cell) && isShadedPathCell(state, cell),
   );
@@ -681,8 +689,10 @@ function checkShadedPathObjective(state: GameState): VictoryObjectiveResult {
   };
 }
 
-// objetivo carta 12
-function checkFrequentStopsObjective(state: GameState): VictoryObjectiveResult {
+// requisito carta 12
+function checkFrequentStopsRequirement(
+  state: GameState,
+): VictoryRequirementResult {
   const validPathCount = getPathStopCounts(state).filter(
     (benchCount) => benchCount >= 3,
   ).length;
@@ -720,22 +730,22 @@ const scoringFunctions: Record<
   '12-paradas-frecuentes': scoreFrequentStops,
 };
 
-const victoryObjectiveFunctions: Record<
+const victoryRequirementFunctions: Record<
   string,
-  (state: GameState) => VictoryObjectiveResult
+  (state: GameState) => VictoryRequirementResult
 > = {
-  '01-un-camino-largo-y-sinuoso': checkLongPathObjective,
-  '02-el-bosque-de-los-cien-acres': checkCornerForestObjective,
-  '03-de-mar-a-mar': checkOneLakeObjective,
-  '04-los-mejores-asientos-de-la-casa': noExtraVictoryObjective,
-  '05-fronteras-naturales': checkFullBorderObjective,
-  '06-puentes-sobre-aguas-turbulentas': checkBridgeObjective,
-  '07-un-lugar-sombreado-para-descansar': noExtraVictoryObjective,
-  '08-de-pesca': checkFishingObjective,
-  '09-centro-de-atencion': checkInformationCenterObjective,
-  '10-un-poco-de-todo': checkOneOfEverythingObjective,
-  '11-un-paseo-para-recordar': checkShadedPathObjective,
-  '12-paradas-frecuentes': checkFrequentStopsObjective,
+  '01-un-camino-largo-y-sinuoso': checkLongPathRequirement,
+  '02-el-bosque-de-los-cien-acres': checkCornerForestRequirement,
+  '03-de-mar-a-mar': checkOneLakeRequirement,
+  '04-los-mejores-asientos-de-la-casa': noExtraVictoryRequirement,
+  '05-fronteras-naturales': checkFullBorderRequirement,
+  '06-puentes-sobre-aguas-turbulentas': checkBridgeRequirement,
+  '07-un-lugar-sombreado-para-descansar': noExtraVictoryRequirement,
+  '08-de-pesca': checkFishingRequirement,
+  '09-centro-de-atencion': checkInformationCenterRequirement,
+  '10-un-poco-de-todo': checkOneOfEverythingRequirement,
+  '11-un-paseo-para-recordar': checkShadedPathRequirement,
+  '12-paradas-frecuentes': checkFrequentStopsRequirement,
 };
 
 // calcula cada carta y resta las penalizaciones finales
@@ -767,11 +777,11 @@ export function calculateFinalScore(state: GameState): ScoreState {
     .map((card) => String(card.soloTarget))
     .join(' + ');
   const total = cardTotal - penaltyTotal;
-  const victoryObjectives: VictoryObjectiveState[] = state.scoringCards.map(
+  const victoryRequirements: VictoryRequirementState[] = state.scoringCards.map(
     (card) => {
-      const checkObjective =
-        victoryObjectiveFunctions[card.id] ?? noExtraVictoryObjective;
-      const result = checkObjective(state);
+      const checkRequirement =
+        victoryRequirementFunctions[card.id] ?? noExtraVictoryRequirement;
+      const result = checkRequirement(state);
 
       return {
         cardId: card.id,
@@ -782,8 +792,8 @@ export function calculateFinalScore(state: GameState): ScoreState {
       };
     },
   );
-  const allObjectivesMet = victoryObjectives.every(
-    (objective) => objective.fulfilled,
+  const allRequirementsMet = victoryRequirements.every(
+    (requirement) => requirement.fulfilled,
   );
   const soloTargetReached = total >= soloTarget;
 
@@ -797,8 +807,8 @@ export function calculateFinalScore(state: GameState): ScoreState {
     soloTarget,
     soloTargetBreakdown,
     soloTargetReached,
-    victoryObjectives,
-    victoryAchieved: soloTargetReached && allObjectivesMet,
+    victoryRequirements,
+    victoryAchieved: soloTargetReached && allRequirementsMet,
     total,
   };
 }

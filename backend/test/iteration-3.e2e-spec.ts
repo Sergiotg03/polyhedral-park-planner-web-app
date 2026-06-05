@@ -293,7 +293,7 @@ describe('Iteracion 3', () => {
     expect(score?.total).toBe(-3);
   });
 
-  it('P3-04 suma puntos de pesca pero valida el objetivo gris por banco individual', async () => {
+  it('P3-04 diferencia la puntuacion y el requisito de la carta De pesca', async () => {
     const user = await createTestUser('it3fishing');
     const gameSession = await createGameSession(user.token);
     const state = gameSession.state as GameState;
@@ -328,18 +328,18 @@ describe('Iteracion 3', () => {
     const fishingCard = score?.cards.find(
       (card) => card.cardId === '08-de-pesca',
     );
-    const fishingObjective = score?.victoryObjectives.find(
-      (objective) => objective.cardId === '08-de-pesca',
+    const fishingRequirement = score?.victoryRequirements.find(
+      (requirement) => requirement.cardId === '08-de-pesca',
     );
 
     expect(fishingCard?.points).toBe(6);
     expect(fishingCard?.detail).toContain('4 + 2');
-    expect(fishingObjective?.fulfilled).toBe(false);
-    expect(fishingObjective?.detail).toBe('Mejor banco: 4 puntos');
+    expect(fishingRequirement?.fulfilled).toBe(false);
+    expect(fishingRequirement?.detail).toBe('Mejor banco: 4 puntos');
     expect(score?.victoryAchieved).toBe(false);
   });
 
-  it('P3-05 reconoce una victoria si se cumplen puntos y objetivos grises', async () => {
+  it('P3-05 reconoce una victoria si se cumplen puntos y requisitos', async () => {
     const user = await createTestUser('it3victory');
     const gameSession = await createGameSession(user.token);
     const state = gameSession.state as GameState;
@@ -381,9 +381,71 @@ describe('Iteracion 3', () => {
     expect(score?.soloTarget).toBe(46);
     expect(score?.total).toBe(74);
     expect(score?.soloTargetReached).toBe(true);
-    expect(score?.victoryObjectives.every((objective) => objective.fulfilled)).toBe(
-      true,
+    expect(
+      score?.victoryRequirements.every((requirement) => requirement.fulfilled),
+    ).toBe(true);
+    expect(score?.victoryAchieved).toBe(true);
+  });
+
+  it('P3-06 aplica penalizacion al modificar dados y la resta al puntuar', async () => {
+    const user = await createTestUser('it3modifiers');
+    const gameSession = await createGameSession(user.token);
+    const state = gameSession.state as GameState;
+
+    prepareFinalRound(state);
+    cleanBoard(state);
+
+    state.scoringCards = [
+      getScoringCard('04-los-mejores-asientos-de-la-casa'),
+      getScoringCard('07-un-lugar-sombreado-para-descansar'),
+      getScoringCard('09-centro-de-atencion'),
+    ];
+    state.rounds[9].dice = GAME_DICE.map((dice) => ({
+      type: dice.type,
+      sides: dice.sides,
+      value: 1,
+      used: dice.type !== 'D4',
+    }));
+
+    buildWinningBoard(state);
+
+    await updateSessionState(gameSession.id, state);
+
+    const modifyResponse = await request(app.getHttpServer())
+      .post(`/game-sessions/${gameSession.id}/modify-dice`)
+      .set('Authorization', `Bearer ${user.token}`)
+      .send({
+        diceType: 'D4',
+        delta: 1,
+      })
+      .expect(201);
+
+    const modifiedState = modifyResponse.body.state as GameState;
+    const d4 = modifiedState.rounds[9].dice?.find(
+      (dice) => dice.type === 'D4',
     );
+
+    expect(d4?.value).toBe(2);
+    expect(modifiedState.penalties.diceModifications).toBe(1);
+
+    await request(app.getHttpServer())
+      .post(`/game-sessions/${gameSession.id}/unlock-development`)
+      .set('Authorization', `Bearer ${user.token}`)
+      .send({
+        developmentType: 'TREE',
+        diceTypes: ['D4'],
+      })
+      .expect(201);
+
+    const response = await request(app.getHttpServer())
+      .post(`/game-sessions/${gameSession.id}/advance-round`)
+      .set('Authorization', `Bearer ${user.token}`)
+      .expect(201);
+
+    const score = (response.body.state as GameState).score;
+
+    expect(score?.penalties.diceModifications).toBe(1);
+    expect(score?.total).toBe(73);
     expect(score?.victoryAchieved).toBe(true);
   });
 });
