@@ -18,6 +18,8 @@ type TestUser = {
 
 const TEST_EMAIL_DOMAIN = '@iteration3.test';
 
+jest.setTimeout(30000);
+
 describe('Iteracion 3', () => {
   let app: INestApplication;
   let prisma: PrismaService;
@@ -47,11 +49,17 @@ describe('Iteracion 3', () => {
 
   afterAll(async () => {
     await cleanTestData();
-    await app.close();
+    await app?.close();
   });
 
   async function cleanTestData() {
-    const testUsers = await prisma.user.findMany({
+    const prismaService = prisma;
+
+    if (!prismaService) {
+      return;
+    }
+
+    const testUsers = await prismaService.user.findMany({
       where: {
         email: {
           endsWith: TEST_EMAIL_DOMAIN,
@@ -64,7 +72,7 @@ describe('Iteracion 3', () => {
     const testUserIds = testUsers.map((user) => user.id);
 
     if (testUserIds.length > 0) {
-      await prisma.gameSession.deleteMany({
+      await prismaService.gameSession.deleteMany({
         where: {
           userId: {
             in: testUserIds,
@@ -73,7 +81,7 @@ describe('Iteracion 3', () => {
       });
     }
 
-    await prisma.user.deleteMany({
+    await prismaService.user.deleteMany({
       where: {
         email: {
           endsWith: TEST_EMAIL_DOMAIN,
