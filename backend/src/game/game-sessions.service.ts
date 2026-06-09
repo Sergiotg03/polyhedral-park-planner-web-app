@@ -227,6 +227,29 @@ export class GameSessionsService {
     });
   }
 
+  // devuelve las partidas del usuario ordenadas de mas nueva a mas antigua
+  async findAllForUser(userId: string) {
+    const gameSessions = await this.prisma.gameSession.findMany({
+      where: {
+        userId,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    return gameSessions.map((gameSession) => {
+      const state = normalizeGameState(
+        gameSession.state as unknown as GameState,
+      );
+
+      return {
+        ...gameSession,
+        state,
+      };
+    });
+  }
+
   // busca por id y usuario para no abrir partidas de otros usuarios
   async findOneForUser(userId: string, id: string) {
     const gameSession = await this.prisma.gameSession.findFirst({

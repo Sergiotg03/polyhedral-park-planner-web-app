@@ -41,6 +41,12 @@ export class GameSessionsController {
     return this.gameSessionsService.create(req.user.id);
   }
 
+  // lista las partidas del usuario para el historial del home
+  @Get()
+  findAll(@Req() req: AuthenticatedRequest) {
+    return this.gameSessionsService.findAllForUser(req.user.id);
+  }
+
   // carga una partida concreta solo si pertenece al usuario
   @Get(':id')
   findOne(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
