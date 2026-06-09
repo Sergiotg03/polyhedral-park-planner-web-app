@@ -20,6 +20,8 @@ import PageContainer from '../components/PageContainer'
 import { API_URL, TOKEN_KEY } from '../config'
 import type { GameSession, User } from '../types'
 
+const HISTORY_PAGE_SIZE = 5
+
 // formatea la fecha de creacion para que se lea facil en el historial
 function formatSessionDate(date: string) {
   return new Intl.DateTimeFormat('es-ES', {
@@ -57,6 +59,24 @@ function HomePage() {
   const [loading, setLoading] = useState(true)
   const [creatingGame, setCreatingGame] = useState(false)
   const [error, setError] = useState('')
+
+  // paginación
+  const [historyPage, setHistoryPage] = useState(1)
+
+  const totalHistoryPages = Math.max(
+    1,
+    Math.ceil(gameSessions.length / HISTORY_PAGE_SIZE),
+  )
+  const currentHistoryPage = Math.min(historyPage, totalHistoryPages)
+  const historyStartIndex = (currentHistoryPage - 1) * HISTORY_PAGE_SIZE
+  const historyEndIndex = historyStartIndex + HISTORY_PAGE_SIZE
+  const visibleGameSessions = gameSessions.slice(
+    historyStartIndex,
+    historyEndIndex,
+  )
+  const firstVisibleSession =
+    gameSessions.length === 0 ? 0 : historyStartIndex + 1
+  const lastVisibleSession = Math.min(historyEndIndex, gameSessions.length)
 
   useEffect(() => {
     // se comprueba si hay token antes de pedir datos
@@ -241,7 +261,7 @@ function HomePage() {
             </Box>
           ) : (
             <VStack align="stretch" gap={3}>
-              {gameSessions.map((session) => {
+              {visibleGameSessions.map((session) => {
                 const isCompleted = session.status === 'COMPLETED'
                 const roundNumber =
                   session.state?.currentRound ?? session.currentRound
@@ -342,6 +362,56 @@ function HomePage() {
                   </Box>
                 )
               })}
+
+              {gameSessions.length > HISTORY_PAGE_SIZE && (
+                <HStack
+                  justify="space-between"
+                  align="center"
+                  gap={4}
+                  pt={2}
+                  flexWrap="wrap"
+                >
+                  <Text color="gray.600" fontSize="sm">
+                    Mostrando {firstVisibleSession}-{lastVisibleSession} de{' '}
+                    {gameSessions.length}
+                  </Text>
+
+                  <HStack gap={2}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={currentHistoryPage === 1}
+                      onClick={() =>
+                        setHistoryPage(Math.max(1, currentHistoryPage - 1))
+                      }
+                    >
+                      Anterior
+                    </Button>
+
+                    <Text
+                      minW="100px"
+                      textAlign="center"
+                      color="gray.700"
+                      fontWeight="medium"
+                    >
+                      Pagina {currentHistoryPage} de {totalHistoryPages}
+                    </Text>
+
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={currentHistoryPage === totalHistoryPages}
+                      onClick={() =>
+                        setHistoryPage(
+                          Math.min(totalHistoryPages, currentHistoryPage + 1),
+                        )
+                      }
+                    >
+                      Siguiente
+                    </Button>
+                  </HStack>
+                </HStack>
+              )}
             </VStack>
           )}
         </Box>
