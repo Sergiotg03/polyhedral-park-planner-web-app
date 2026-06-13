@@ -18,9 +18,16 @@ import {
 import Navbar from '../components/Navbar'
 import PageContainer from '../components/PageContainer'
 import { API_URL, TOKEN_KEY } from '../config'
-import type { GameSession, User } from '../types'
+import type { DevelopmentType, GameSession, User } from '../types'
 
 const HISTORY_PAGE_SIZE = 5
+
+const DEVELOPMENT_STATS: Array<{ type: DevelopmentType; label: string }> = [
+  { type: 'TREE', label: 'Árboles' },
+  { type: 'PATH', label: 'Caminos' },
+  { type: 'WATER', label: 'Agua' },
+  { type: 'BENCH', label: 'Bancos' },
+]
 
 // formatea la fecha de creacion para que se lea facil en el historial
 function formatSessionDate(date: string) {
@@ -51,6 +58,72 @@ function getScoreText(session: GameSession) {
   return `${session.state.score.total} puntos`
 }
 
+// deja los puntos con un solo decimal (solo si hace falta)
+function formatStatScore(score: number | null) {
+  if (score === null) {
+    return '-'
+  }
+
+  return Number.isInteger(score) ? `${score}` : score.toFixed(1)
+}
+
+// calcula estadisticas sencillas a partir de las partidas cargadas
+function getAccountStats(gameSessions: GameSession[]) {
+  let wins = 0
+  let losses = 0
+  let totalScore = 0
+  let finishedGames = 0
+  let maxScore: number | null = null
+  let minScore: number | null = null
+  const developmentCounts: Record<DevelopmentType, number> = {
+    TREE: 0,
+    PATH: 0,
+    WATER: 0,
+    BENCH: 0,
+  }
+
+  gameSessions.forEach((session) => {
+    if (session.status === 'COMPLETED' && session.state.score) {
+      const score = session.state.score.total
+
+      finishedGames += 1
+      totalScore += score
+
+      if (session.state.score.victoryAchieved) {
+        wins += 1
+      } else {
+        losses += 1
+      }
+
+      if (maxScore === null || score > maxScore) {
+        maxScore = score
+      }
+
+      if (minScore === null || score < minScore) {
+        minScore = score
+      }
+    }
+
+    session.state.board.forEach((row) => {
+      row.forEach((cell) => {
+        if (cell.development) {
+          developmentCounts[cell.development] += 1
+        }
+      })
+    })
+  })
+
+  return {
+    games: gameSessions.length,
+    wins,
+    losses,
+    averageScore: finishedGames > 0 ? totalScore / finishedGames : null,
+    maxScore,
+    minScore,
+    developmentCounts,
+  }
+}
+
 function HomePage() {
   const navigate = useNavigate()
 
@@ -63,20 +136,17 @@ function HomePage() {
   // paginación
   const [historyPage, setHistoryPage] = useState(1)
 
-  const totalHistoryPages = Math.max(
+  const totalPages = Math.max(
     1,
     Math.ceil(gameSessions.length / HISTORY_PAGE_SIZE),
   )
-  const currentHistoryPage = Math.min(historyPage, totalHistoryPages)
-  const historyStartIndex = (currentHistoryPage - 1) * HISTORY_PAGE_SIZE
-  const historyEndIndex = historyStartIndex + HISTORY_PAGE_SIZE
-  const visibleGameSessions = gameSessions.slice(
-    historyStartIndex,
-    historyEndIndex,
-  )
-  const firstVisibleSession =
-    gameSessions.length === 0 ? 0 : historyStartIndex + 1
-  const lastVisibleSession = Math.min(historyEndIndex, gameSessions.length)
+  const page = Math.min(historyPage, totalPages)
+  const start = (page - 1) * HISTORY_PAGE_SIZE
+  const end = start + HISTORY_PAGE_SIZE
+  const visibleGameSessions = gameSessions.slice(start, end)
+  const firstVisibleSession = gameSessions.length === 0 ? 0 : start + 1
+  const lastVisibleSession = Math.min(end, gameSessions.length)
+  const accountStats = getAccountStats(gameSessions)
 
   useEffect(() => {
     // se comprueba si hay token antes de pedir datos
@@ -197,11 +267,11 @@ function HomePage() {
         >
           <VStack gap={6} textAlign="center">
             <Heading size="2xl" color="green.700">
-              Bienvenido {user?.username}!
+              ¡Bienvenido {user?.username}!
             </Heading>
 
             <Text color="gray.600" fontSize="lg">
-              Crea una nueva partida para empezar con una hoja oficial aleatoria.
+              Crea una nueva partida para empezar a jugar.
             </Text>
 
             {error && (
@@ -232,14 +302,120 @@ function HomePage() {
           borderRadius="md"
           p={{ base: 5, md: 7 }}
         >
+          <Box mb={5}>
+            <Heading size="lg" color="green.700">
+              Estadísticas generales
+            </Heading>
+          </Box>
+
+          <Grid
+            templateColumns={{
+              base: 'repeat(2, minmax(0, 1fr))',
+              md: 'repeat(6, minmax(0, 1fr))',
+            }}
+            gap={3}
+          >
+            <Box bg="gray.50" borderRadius="md" p={4}>
+              <Text color="gray.600" fontSize="sm">
+                Partidas totales
+              </Text>
+              <Text fontSize="2xl" fontWeight="bold">
+                {accountStats.games}
+              </Text>
+            </Box>
+
+            <Box bg="green.50" borderRadius="md" p={4}>
+              <Text color="green.700" fontSize="sm">
+                Victorias
+              </Text>
+              <Text fontSize="2xl" fontWeight="bold" color="green.700">
+                {accountStats.wins}
+              </Text>
+            </Box>
+
+            <Box bg="red.50" borderRadius="md" p={4}>
+              <Text color="red.700" fontSize="sm">
+                Derrotas
+              </Text>
+              <Text fontSize="2xl" fontWeight="bold" color="red.700">
+                {accountStats.losses}
+              </Text>
+            </Box>
+
+            <Box bg="gray.50" borderRadius="md" p={4}>
+              <Text color="gray.600" fontSize="sm">
+                Puntuación Media
+              </Text>
+              <Text fontSize="2xl" fontWeight="bold">
+                {formatStatScore(accountStats.averageScore)}
+              </Text>
+            </Box>
+
+            <Box bg="gray.50" borderRadius="md" p={4}>
+              <Text color="gray.600" fontSize="sm">
+                Puntuación Máxima
+              </Text>
+              <Text fontSize="2xl" fontWeight="bold">
+                {formatStatScore(accountStats.maxScore)}
+              </Text>
+            </Box>
+
+            <Box bg="gray.50" borderRadius="md" p={4}>
+              <Text color="gray.600" fontSize="sm">
+                Puntuación Mínima
+              </Text>
+              <Text fontSize="2xl" fontWeight="bold">
+                {formatStatScore(accountStats.minScore)}
+              </Text>
+            </Box>
+          </Grid>
+
+          <Box mt={5}>
+            <Text fontWeight="bold" color="gray.800" mb={3}>
+              Elementos colocados
+            </Text>
+
+            <Grid
+              templateColumns={{
+                base: 'repeat(2, minmax(0, 1fr))',
+                md: 'repeat(4, minmax(0, 1fr))',
+              }}
+              gap={3}
+            >
+              {DEVELOPMENT_STATS.map((development) => (
+                <Box
+                  key={development.type}
+                  border="1px solid"
+                  borderColor="blackAlpha.200"
+                  borderRadius="md"
+                  p={4}
+                >
+                  <Text color="gray.600" fontSize="sm">
+                    {development.label}
+                  </Text>
+                  <Text fontSize="2xl" fontWeight="bold">
+                    {accountStats.developmentCounts[development.type]}
+                  </Text>
+                </Box>
+              ))}
+            </Grid>
+          </Box>
+        </Box>
+
+        <Box
+          w="100%"
+          mt={8}
+          bg="white"
+          border="1px solid"
+          borderColor="blackAlpha.200"
+          borderRadius="md"
+          p={{ base: 5, md: 7 }}
+        >
           <HStack justify="space-between" align="center" gap={4} mb={5}>
             <Box>
               <Heading size="lg" color="green.700">
                 Historial de partidas
               </Heading>
-              <Text color="gray.600" mt={1}>
-                Partidas ordenadas de más reciente a más antigua.
-              </Text>
             </Box>
 
             <Text fontWeight="bold" color="gray.700" flexShrink={0}>
@@ -380,10 +556,8 @@ function HomePage() {
                     <Button
                       size="sm"
                       variant="outline"
-                      disabled={currentHistoryPage === 1}
-                      onClick={() =>
-                        setHistoryPage(Math.max(1, currentHistoryPage - 1))
-                      }
+                      disabled={page === 1}
+                      onClick={() => setHistoryPage(Math.max(1, page - 1))}
                     >
                       Anterior
                     </Button>
@@ -394,17 +568,15 @@ function HomePage() {
                       color="gray.700"
                       fontWeight="medium"
                     >
-                      Pagina {currentHistoryPage} de {totalHistoryPages}
+                      Página {page} de {totalPages}
                     </Text>
 
                     <Button
                       size="sm"
                       variant="outline"
-                      disabled={currentHistoryPage === totalHistoryPages}
+                      disabled={page === totalPages}
                       onClick={() =>
-                        setHistoryPage(
-                          Math.min(totalHistoryPages, currentHistoryPage + 1),
-                        )
+                        setHistoryPage(Math.min(totalPages, page + 1))
                       }
                     >
                       Siguiente

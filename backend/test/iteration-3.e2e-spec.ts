@@ -201,7 +201,7 @@ describe('Iteracion 3', () => {
     }
   }
 
-  it('P3-01 crea una partida con tres cartas de puntuacion', async () => {
+  it('P3-01 crea una partida con tres cartas de puntuación', async () => {
     const user = await createTestUser('it3cards');
     const gameSession = await createGameSession(user.token);
     const state = gameSession.state as GameState;
@@ -213,7 +213,7 @@ describe('Iteracion 3', () => {
     expect(state.score).toBeNull();
   });
 
-  it('P3-02 calcula la puntuacion final al terminar la ronda 10', async () => {
+  it('P3-02 calcula la puntuación final al terminar la ronda 10', async () => {
     const user = await createTestUser('it3score');
     const gameSession = await createGameSession(user.token);
     const state = gameSession.state as GameState;
@@ -301,7 +301,7 @@ describe('Iteracion 3', () => {
     expect(score?.total).toBe(-3);
   });
 
-  it('P3-04 diferencia la puntuacion y el requisito de la carta De pesca', async () => {
+  it('P3-04 diferencia la puntuación y el requisito de la carta De pesca', async () => {
     const user = await createTestUser('it3fishing');
     const gameSession = await createGameSession(user.token);
     const state = gameSession.state as GameState;
@@ -455,5 +455,41 @@ describe('Iteracion 3', () => {
     expect(score?.penalties.diceModifications).toBe(1);
     expect(score?.total).toBe(73);
     expect(score?.victoryAchieved).toBe(true);
+  });
+
+  it('P3-07 aplica penalizacion al relanzar dados', async () => {
+    const user = await createTestUser('it3reroll');
+    const gameSession = await createGameSession(user.token);
+    const state = gameSession.state as GameState;
+
+    state.rounds[0].dice = GAME_DICE.map((dice) => ({
+      type: dice.type,
+      sides: dice.sides,
+      value: 1,
+      used: dice.type !== 'D4' && dice.type !== 'D6',
+    }));
+
+    await updateSessionState(gameSession.id, state);
+
+    const response = await request(app.getHttpServer())
+      .post(`/game-sessions/${gameSession.id}/reroll-dice`)
+      .set('Authorization', `Bearer ${user.token}`)
+      .send({
+        diceTypes: ['D4', 'D6'],
+      })
+      .expect(201);
+
+    const updatedState = response.body.state as GameState;
+    const currentDice = updatedState.rounds[0].dice;
+    const d4 = currentDice?.find((dice) => dice.type === 'D4');
+    const d6 = currentDice?.find((dice) => dice.type === 'D6');
+
+    expect(updatedState.penalties.diceModifications).toBe(2);
+    expect(d4?.used).toBe(false);
+    expect(d6?.used).toBe(false);
+    expect(d4?.value).toBeGreaterThanOrEqual(1);
+    expect(d4?.value).toBeLessThanOrEqual(4);
+    expect(d6?.value).toBeGreaterThanOrEqual(1);
+    expect(d6?.value).toBeLessThanOrEqual(6);
   });
 });

@@ -160,24 +160,23 @@ describe('Iteracion 2', () => {
   }
 
   function findEmptyParkCell(state: GameState, differentFrom?: number) {
-    const cells = state.board.flat();
-    const cell = cells.find((boardCell) => {
-      const hasDifferentValue =
-        differentFrom === undefined || boardCell.printedValue !== differentFrom;
+    for (const row of state.board) {
+      for (const cell of row) {
+        const hasDifferentValue =
+          differentFrom === undefined || cell.printedValue !== differentFrom;
 
-      return (
-        boardCell.kind === 'PARK' &&
-        !boardCell.development &&
-        boardCell.printedValue !== null &&
-        hasDifferentValue
-      );
-    });
-
-    if (!cell) {
-      throw new Error('No se ha encontrado una casilla valida para la prueba');
+        if (
+          cell.kind === 'PARK' &&
+          !cell.development &&
+          cell.printedValue !== null &&
+          hasDifferentValue
+        ) {
+          return cell;
+        }
+      }
     }
 
-    return cell;
+    throw new Error('No se ha encontrado una casilla valida para la prueba');
   }
 
   it('P2-01 crea una partida con tablero y ronda inicial', async () => {
@@ -218,7 +217,7 @@ describe('Iteracion 2', () => {
       .expect(400);
   });
 
-  it('P2-03 desbloquea un arbol con una suma valida', async () => {
+  it('P2-03 desbloquea un árbol con una suma valida', async () => {
     const user = await createTestUser('it2unlock');
     const gameSession = await createGameSession(user.token);
     const state = gameSession.state as GameState;
@@ -326,7 +325,7 @@ describe('Iteracion 2', () => {
       .expect(400);
   });
 
-  it('P2-07 no avanza de ronda si todavia quedan acciones posibles', async () => {
+  it('P2-07 no avanza de ronda si todavía quedan acciones posibles', async () => {
     const user = await createTestUser('it2blockadvance');
     const gameSession = await createGameSession(user.token);
     const state = gameSession.state as GameState;

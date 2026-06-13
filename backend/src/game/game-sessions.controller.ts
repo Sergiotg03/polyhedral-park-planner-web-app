@@ -18,6 +18,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import {
   ModifyDiceDto,
   PlaceDevelopmentDto,
+  RerollDiceDto,
   UnlockDevelopmentDto,
 } from './dto/game-actions.dto';
 
@@ -67,6 +68,16 @@ export class GameSessionsController {
     @Body() modifyDiceDto: ModifyDiceDto,
   ) {
     return this.gameSessionsService.modifyDice(req.user.id, id, modifyDiceDto);
+  }
+
+  // relanza uno o varios dados y suma penalizaciones
+  @Post(':id/reroll-dice')
+  rerollDice(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Body() rerollDiceDto: RerollDiceDto,
+  ) {
+    return this.gameSessionsService.rerollDice(req.user.id, id, rerollDiceDto);
   }
 
   // desbloquea uno de los elementos con los dados seleccionados

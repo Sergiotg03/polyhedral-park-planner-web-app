@@ -59,7 +59,14 @@ type VisibleDice = {
   used: boolean
 }
 
-type ActionLoading = 'roll' | 'modify' | 'unlock' | 'place' | 'advance' | null
+type ActionLoading =
+  | 'roll'
+  | 'modify'
+  | 'reroll'
+  | 'unlock'
+  | 'place'
+  | 'advance'
+  | null
 
 // crea una clave unica para poder marcar casillas del tablero
 function getCellKey(cell: Pick<ParkCell, 'row' | 'column'>) {
@@ -68,7 +75,13 @@ function getCellKey(cell: Pick<ParkCell, 'row' | 'column'>) {
 
 // suma todos los dados que hay seleccionados
 function getDiceSum(dice: Array<{ value: number }>) {
-  return dice.reduce((total, diceItem) => total + diceItem.value, 0)
+  let total = 0
+
+  dice.forEach((diceItem) => {
+    total += diceItem.value
+  })
+
+  return total
 }
 
 // calcula todas las combinaciones posibles de los dados recibidos
@@ -88,15 +101,16 @@ function getDiceSubsets(dice: Dice[]) {
 
 // devuelve que elemento corresponde a una suma concreta
 function getDevelopmentForSum(value: number) {
-  return (
-    DEVELOPMENT_REFERENCE.find((development) => {
-      const isGreaterThanMinimum = value >= development.min
-      const isLessThanMaximum =
-        development.max === null || value <= development.max
+  for (const development of DEVELOPMENT_REFERENCE) {
+    const fitsMin = value >= development.min
+    const fitsMax = development.max === null || value <= development.max
 
-      return isGreaterThanMinimum && isLessThanMaximum
-    })?.type ?? null
-  )
+    if (fitsMin && fitsMax) {
+      return development.type
+    }
+  }
+
+  return null
 }
 
 // mira si existe alguna casilla libre con el valor exacto
@@ -157,14 +171,19 @@ function GameSessionPage() {
 
   // datos utiles ya separados de la ronda
   const unlockedDevelopments = activeRound?.unlockedDevelopments ?? []
+  
   const activeDice = activeRound?.dice ?? []
+
   const unusedDice = activeDice.filter((dice) => !dice.used)
+
   const isGameCompleted =
     gameSession?.status === 'COMPLETED' ||
     gameSession?.state.status === 'COMPLETED'
+
   const isFinalRound =
     (gameSession?.state.currentRound ?? 0) >=
     (gameSession?.state.totalRounds ?? 1)
+
   const finalScore = gameSession?.state.score ?? null
 
   // si aun no se han tirado dados, se pintan los dados vacios en gris
@@ -196,13 +215,21 @@ function GameSessionPage() {
     Boolean(activeRound?.dice) &&
     !isGameCompleted &&
     diceModificationsUsed < MAX_DICE_MODIFICATIONS
+
   const canDecreaseSelectedDice =
     selectedSingleDice !== null &&
     canModifySelectedDice &&
     selectedSingleDice.value > 1
+
   const canIncreaseSelectedDice =
     selectedSingleDice !== null &&
     canModifySelectedDice
+
+  const canRerollSelectedDice =
+    selectedDice.length > 0 &&
+    Boolean(activeRound?.dice) &&
+    !isGameCompleted &&
+    diceModificationsUsed + selectedDice.length <= MAX_DICE_MODIFICATIONS
 
   // elemento que se podria desbloquear con esa suma
   const unlockableDevelopmentType =
@@ -238,18 +265,22 @@ function GameSessionPage() {
     )
 
   // casillas que se iluminan porque coinciden con la suma seleccionada
-  const highlightedCellKeys =
-    gameSession && canPlaceSelectedDevelopment
-      ? gameSession.state.board
-          .flat()
-          .filter(
-            (cell) =>
-              cell.kind === 'PARK' &&
-              !cell.development &&
-              cell.printedValue === selectedDiceSum,
-          )
-          .map(getCellKey)
-      : []
+  const highlightedCellKeys: string[] = []
+
+  if (gameSession && canPlaceSelectedDevelopment) {
+    gameSession.state.board.forEach((row) => {
+      row.forEach((cell) => {
+        const canUseCell =
+          cell.kind === 'PARK' &&
+          !cell.development &&
+          cell.printedValue === selectedDiceSum
+
+        if (canUseCell) {
+          highlightedCellKeys.push(getCellKey(cell))
+        }
+      })
+    })
+  }
 
   // mira si aun se podria colocar algo con los dados restantes
   const hasPlaceActionAvailable =
@@ -334,6 +365,28 @@ function GameSessionPage() {
 
     fetchGameSession()
   }, [id, navigate])
+
+  useEffect(() => {
+    if (!activeRound || isGameCompleted) {
+      setSelectedDevelopmentType(null)
+      return
+    }
+
+    if (activeRound.unlockedDevelopments.length === 0) {
+      setSelectedDevelopmentType(null)
+      return
+    }
+
+    const selectedDevelopmentStillExists =
+      selectedDevelopmentType !== null &&
+      activeRound.unlockedDevelopments.some(
+        (development) => development.type === selectedDevelopmentType,
+      )
+
+    if (!selectedDevelopmentStillExists) {
+      setSelectedDevelopmentType(activeRound.unlockedDevelopments[0].type)
+    }
+  }, [activeRound, isGameCompleted, selectedDevelopmentType])
 
   // cierra sesion desde la partida
   const handleLogout = () => {
@@ -439,6 +492,27 @@ function GameSessionPage() {
     }
   }
 
+  // relanza los dados seleccionados y apunta una penalizacion por cada dado
+  const handleRerollDice = async () => {
+    if (!canRerollSelectedDice) {
+      return
+    }
+
+    const diceTypes = selectedDice.map((dice) => dice.type)
+    const updatedSession = await sendGameAction(
+      'reroll-dice',
+      'reroll',
+      'No se pudieron relanzar los dados',
+      {
+        diceTypes,
+      },
+    )
+
+    if (updatedSession) {
+      setSelectedDiceTypes(diceTypes)
+    }
+  }
+
   // usa los dados seleccionados para desbloquear el elemento marcado en verde
   const handleUnlockDevelopment = async (developmentType: DevelopmentType) => {
     if (!canUnlockSelectedDevelopment || developmentType !== highlightedDevelopmentType) {
@@ -521,7 +595,7 @@ function GameSessionPage() {
     )
   }
 
-  // pagina con tooooda la partida :)
+  // pagina con tooooda la partida
   return (
     <Box minH="100vh" bg="gray.50">
       {/* barra superior con el logo, usuario y cerrar sesion */}
@@ -543,7 +617,7 @@ function GameSessionPage() {
                 No se puede abrir esta partida
               </Heading>
               <Text color="gray.600">{pageError}</Text>
-              <Button onClick={() => navigate('/')}>Volver al menu</Button>
+              <Button onClick={() => navigate('/')}>Volver al menú</Button>
             </VStack>
           </Box>
         ) : (
@@ -575,6 +649,16 @@ function GameSessionPage() {
                   const isCurrent =
                     round.roundNumber === gameSession.state.currentRound
                   const isCompleted = round.completed
+                  let roundBorderColor = 'blackAlpha.300'
+                  let roundBgColor = 'white'
+
+                  if (isCurrent) {
+                    roundBorderColor = 'green.700'
+                    roundBgColor = 'green.600'
+                  } else if (isCompleted) {
+                    roundBorderColor = 'gray.300'
+                    roundBgColor = 'gray.200'
+                  }
 
                   return (
                     <Box
@@ -585,20 +669,8 @@ function GameSessionPage() {
                       minW="36px"
                       h="34px"
                       border="1px solid"
-                      borderColor={
-                        isCurrent
-                          ? 'green.700'
-                          : isCompleted
-                            ? 'gray.300'
-                            : 'blackAlpha.300'
-                      }
-                      bg={
-                        isCurrent
-                          ? 'green.600'
-                          : isCompleted
-                            ? 'gray.200'
-                            : 'white'
-                      }
+                      borderColor={roundBorderColor}
+                      bg={roundBgColor}
                       color={isCurrent ? 'white' : 'gray.700'}
                       borderRadius="sm"
                       fontWeight="bold"
@@ -670,7 +742,7 @@ function GameSessionPage() {
                       <Text color="gray.600" fontSize="sm">
                         {activeRound?.dice
                           ? 'Dados registrados para esta ronda.'
-                          : 'Todavia no se han tirado los dados.'}
+                          : 'Todavía no se han tirado los dados.'}
                       </Text>
                     </Box>
 
@@ -833,6 +905,15 @@ function GameSessionPage() {
                     >
                       +1
                     </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={!canRerollSelectedDice}
+                      loading={actionLoading === 'reroll'}
+                      onClick={handleRerollDice}
+                    >
+                      Relanzar
+                    </Button>
                   </HStack>
 
                   <Grid
@@ -906,25 +987,22 @@ function GameSessionPage() {
                       const isSelected =
                         selectedDevelopmentType === development.type
                       const isSelectable = isUnlocked && !isSelected
-                      const borderColor = canUnlockThis
-                        ? 'orange.500'
-                        : isSelected
-                          ? 'green.600'
-                          : isSelectable
-                            ? 'green.300'
-                            : 'transparent'
-                      const bgColor = canUnlockThis
-                        ? 'orange.50'
-                        : isSelected
-                          ? 'green.100'
-                          : isSelectable
-                            ? 'green.50'
-                            : 'white'
-                      const statusText = canUnlockThis
-                        ? 'Desbloquear'
-                        : isSelected
-                          ? 'Seleccionado'
-                          : ''
+                      let borderColor = 'transparent'
+                      let bgColor = 'white'
+                      let statusText = ''
+
+                      if (canUnlockThis) {
+                        borderColor = 'orange.500'
+                        bgColor = 'orange.50'
+                        statusText = 'Desbloquear'
+                      } else if (isSelected) {
+                        borderColor = 'green.600'
+                        bgColor = 'green.100'
+                        statusText = 'Seleccionado'
+                      } else if (isSelectable) {
+                        borderColor = 'green.300'
+                        bgColor = 'green.50'
+                      }
 
                       return (
                         <Box
@@ -1125,7 +1203,7 @@ function GameSessionPage() {
               <Box borderTop="1px solid" borderColor="blackAlpha.200" />
 
               <HStack justify="space-between">
-                <Text color="gray.700">Penalizacion por modificar dados</Text>
+                <Text color="gray.700">Penalización por modificar dados</Text>
                 <Text color="red.700" fontWeight="bold">
                   -{finalScore.penalties.diceModifications}
                 </Text>
@@ -1134,7 +1212,7 @@ function GameSessionPage() {
               <HStack justify="space-between">
                 <Box>
                   <Text color="gray.700">
-                    Penalizacion por regiones fuera de la vecindad
+                    Penalización por regiones fuera de la vecindad
                   </Text>
                   <Text color="gray.500" fontSize="xs">
                     {finalScore.penalties.isolatedRegionCount}{' '}
@@ -1161,7 +1239,7 @@ function GameSessionPage() {
                     <HStack justify="space-between" align="flex-start" gap={4}>
                       <Box>
                         <Text color="gray.800" fontWeight="bold">
-                          Suma minima de puntos
+                          Suma mínima de puntos
                         </Text>
                         <Text color="gray.700" fontSize="sm">
                           La puntuación final debe alcanzar la suma de las tres

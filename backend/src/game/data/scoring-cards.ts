@@ -48,7 +48,7 @@ export const SCORING_CARDS: ReadonlyArray<ScoringCardDefinition> = [
   },
   {
     id: '09-centro-de-atencion',
-    title: 'Centro de atencion',
+    title: 'Centro de atención',
     soloTarget: 16,
   },
   {
