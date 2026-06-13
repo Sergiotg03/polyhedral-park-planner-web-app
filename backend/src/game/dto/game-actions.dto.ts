@@ -47,3 +47,11 @@ export class ModifyDiceDto {
   @IsIn([-1, 1])
   delta!: -1 | 1;
 }
+
+export class RerollDiceDto {
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayUnique()
+  @IsIn(DICE_TYPES, { each: true })
+  diceTypes!: DiceType[];
+}

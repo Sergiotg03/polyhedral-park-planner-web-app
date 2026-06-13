@@ -175,15 +175,17 @@ export function rollRoundDice(random = Math.random): DiceState[] {
 export function getDevelopmentForUnlockValue(
   value: number,
 ): DevelopmentType | null {
-  const development = DEVELOPMENT_TYPES.find((type) => {
+  for (const type of DEVELOPMENT_TYPES) {
     const range = DEVELOPMENT_UNLOCK_RANGES[type];
-    const isGreaterThanMinimum = value >= range.min;
-    const isLessThanMaximum = range.max === null || value <= range.max;
+    const fitsMin = value >= range.min;
+    const fitsMax = range.max === null || value <= range.max;
 
-    return isGreaterThanMinimum && isLessThanMaximum;
-  });
+    if (fitsMin && fitsMax) {
+      return type;
+    }
+  }
 
-  return development ?? null;
+  return null;
 }
 
 // crea la partida inicial

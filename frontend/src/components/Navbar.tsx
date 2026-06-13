@@ -32,7 +32,7 @@ function Navbar({ username, showAuthLinks = false, onLogout }: Props) {
       <PageContainer py={4}>
         <HStack justify="space-between" align="center" gap={4}>
           <HStack gap={3} minW={0}>
-            <Link asChild aria-label="Volver al menu principal">
+            <Link asChild aria-label="Volver al menú principal">
               <RouterLink to="/">
                 <Image
                   src={logo}

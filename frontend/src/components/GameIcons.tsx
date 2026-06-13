@@ -187,12 +187,17 @@ export function DiceIcon({
   const currentFacetColors = hasValue ? facetColors : disabledFacetColors
   const fillColor = hasValue ? '#38b84c' : '#b8bec7'
   const strokeColor = hasValue ? '#23412b' : '#6b7280'
+  let diceLabel = `${type}: pendiente`
+
+  if (used) {
+    diceLabel = `${type}: usado`
+  } else if (hasValue) {
+    diceLabel = `${type}: ${value}`
+  }
 
   return (
     <span
-      aria-label={
-        used ? `${type}: usado` : hasValue ? `${type}: ${value}` : `${type}: pendiente`
-      }
+      aria-label={diceLabel}
       role="img"
       style={{
         alignItems: 'center',

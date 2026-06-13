@@ -37,6 +37,10 @@ type ModifyDiceData = {
   delta: -1 | 1;
 };
 
+type RerollDiceData = {
+  diceTypes: DiceType[];
+};
+
 type PlaceDevelopmentData = GameSessionActionData & {
   row: number;
   column: number;
@@ -93,7 +97,7 @@ function getRolledDice(round: RoundState) {
 function getSelectedUnusedDice(round: RoundState, diceTypes: DiceType[]) {
   const roundDice = getRolledDice(round);
   const selectedDice = diceTypes.map((type) => {
-    const dice = roundDice.find((roundDie) => roundDie.type === type);
+    const dice = roundDice.find((roundDiceItem) => roundDiceItem.type === type);
 
     if (!dice) {
       throw new BadRequestException('Uno de los dados no existe');
@@ -118,7 +122,13 @@ function getUnusedDiceForModification(round: RoundState, diceType: DiceType) {
 
 // suma los valores de los dados seleccionados
 function sumDice(dice: DiceState[]) {
-  return dice.reduce((total, diceItem) => total + diceItem.value, 0);
+  let total = 0;
+
+  dice.forEach((diceItem) => {
+    total += diceItem.value;
+  });
+
+  return total;
 }
 
 // genera todas las posibles combinaciones de dados que quedan
@@ -227,6 +237,29 @@ export class GameSessionsService {
     });
   }
 
+  // devuelve las partidas del usuario ordenadas de mas nueva a mas antigua
+  async findAllForUser(userId: string) {
+    const gameSessions = await this.prisma.gameSession.findMany({
+      where: {
+        userId,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    return gameSessions.map((gameSession) => {
+      const state = normalizeGameState(
+        gameSession.state as unknown as GameState,
+      );
+
+      return {
+        ...gameSession,
+        state,
+      };
+    });
+  }
+
   // busca por id y usuario para no abrir partidas de otros usuarios
   async findOneForUser(userId: string, id: string) {
     const gameSession = await this.prisma.gameSession.findFirst({
@@ -253,7 +286,7 @@ export class GameSessionsService {
     const gameSession = await this.findOneForUser(userId, id);
 
     if (gameSession.status !== GameSessionStatus.IN_PROGRESS) {
-      throw new BadRequestException('La partida no esta en curso');
+      throw new BadRequestException('La partida no está en curso');
     }
 
     const state = normalizeGameState(gameSession.state as unknown as GameState);
@@ -278,7 +311,7 @@ export class GameSessionsService {
     const gameSession = await this.findOneForUser(userId, id);
 
     if (gameSession.status !== GameSessionStatus.IN_PROGRESS) {
-      throw new BadRequestException('La partida no esta en curso');
+      throw new BadRequestException('La partida no está en curso');
     }
 
     const state = normalizeGameState(gameSession.state as unknown as GameState);
@@ -308,6 +341,41 @@ export class GameSessionsService {
     });
   }
 
+  // relanza uno o varios dados sin usar y apunta una penalizacion por cada uno
+  async rerollDice(userId: string, id: string, actionData: RerollDiceData) {
+    const gameSession = await this.findOneForUser(userId, id);
+
+    if (gameSession.status !== GameSessionStatus.IN_PROGRESS) {
+      throw new BadRequestException('La partida no está en curso');
+    }
+
+    const state = normalizeGameState(gameSession.state as unknown as GameState);
+    const currentRound = getCurrentRound(state);
+    const selectedDice = getSelectedUnusedDice(
+      currentRound,
+      actionData.diceTypes,
+    );
+    const nextPenaltyTotal =
+      state.penalties.diceModifications + selectedDice.length;
+
+    if (nextPenaltyTotal > MAX_DICE_MODIFICATIONS) {
+      throw new BadRequestException('No quedan modificaciones de dados');
+    }
+
+    selectedDice.forEach((dice) => {
+      dice.value = Math.floor(Math.random() * dice.sides) + 1;
+    });
+
+    state.penalties.diceModifications = nextPenaltyTotal;
+
+    return this.prisma.gameSession.update({
+      where: { id: gameSession.id },
+      data: {
+        state: state as unknown as Prisma.InputJsonValue,
+      },
+    });
+  }
+
   // desbloquea un elemento gastando uno o varios dados
   async unlockDevelopment(
     userId: string,
@@ -317,7 +385,7 @@ export class GameSessionsService {
     const gameSession = await this.findOneForUser(userId, id);
 
     if (gameSession.status !== GameSessionStatus.IN_PROGRESS) {
-      throw new BadRequestException('La partida no esta en curso');
+      throw new BadRequestException('La partida no está en curso');
     }
 
     const state = normalizeGameState(gameSession.state as unknown as GameState);
@@ -336,7 +404,7 @@ export class GameSessionsService {
     }
 
     if (hasUnlockedDevelopment(currentRound, actionData.developmentType)) {
-      throw new BadRequestException('Ese elemento ya esta desbloqueado');
+      throw new BadRequestException('Ese elemento ya está desbloqueado');
     }
 
     selectedDice.forEach((dice) => {
@@ -365,7 +433,7 @@ export class GameSessionsService {
     const gameSession = await this.findOneForUser(userId, id);
 
     if (gameSession.status !== GameSessionStatus.IN_PROGRESS) {
-      throw new BadRequestException('La partida no esta en curso');
+      throw new BadRequestException('La partida no está en curso');
     }
 
     const state = normalizeGameState(gameSession.state as unknown as GameState);
@@ -376,13 +444,13 @@ export class GameSessionsService {
     );
 
     if (!unlockedDevelopment) {
-      throw new BadRequestException('Ese elemento no esta desbloqueado');
+      throw new BadRequestException('Ese elemento no está desbloqueado');
     }
 
     const cell = getCell(state, actionData.row, actionData.column);
 
     if (!isEmptyParkCell(cell)) {
-      throw new BadRequestException('No se puede colocar aqui');
+      throw new BadRequestException('No se puede colocar aquí');
     }
 
     const selectedDice = getSelectedUnusedDice(
@@ -417,14 +485,14 @@ export class GameSessionsService {
     const gameSession = await this.findOneForUser(userId, id);
 
     if (gameSession.status !== GameSessionStatus.IN_PROGRESS) {
-      throw new BadRequestException('La partida no esta en curso');
+      throw new BadRequestException('La partida no está en curso');
     }
 
     const state = normalizeGameState(gameSession.state as unknown as GameState);
     const currentRound = getCurrentRound(state);
 
     if (!canAdvanceRound(state, currentRound)) {
-      throw new BadRequestException('Todavia quedan acciones validas');
+      throw new BadRequestException('Todavía quedan acciones válidas');
     }
 
     currentRound.completed = true;

@@ -317,7 +317,7 @@ function scoreLongClosedPath(state: GameState) {
 
   return {
     points: bestLength,
-    detail: `Camino cerrado mas largo: ${bestLength} segmentos`,
+    detail: `Camino cerrado más largo: ${bestLength} segmentos`,
   };
 }
 
@@ -351,7 +351,7 @@ function scoreLargestTreeRectangle(state: GameState) {
 
   return {
     points: bestArea,
-    detail: `Bosque rectangular mas grande: ${bestArea} arboles`,
+    detail: `Bosque rectangular más grande: ${bestArea} árboles`,
   };
 }
 
@@ -365,7 +365,7 @@ function scoreLargestLake(state: GameState) {
 
   return {
     points: largestLake,
-    detail: `Lago conectado mas grande: ${largestLake} casillas`,
+    detail: `Lago conectado más grande: ${largestLake} casillas`,
   };
 }
 
@@ -439,14 +439,18 @@ function scoreShadedBenches(state: GameState) {
 
   return {
     points: shadedBenches * 2,
-    detail: `${shadedBenches} bancos con al menos dos arboles cerca`,
+    detail: `${shadedBenches} bancos con al menos dos árboles cerca`,
   };
 }
 
 // carta 8: bancos con agua alrededor
 function scoreFishing(state: GameState) {
   const benchScores = getFishingBenchScores(state);
-  const points = benchScores.reduce((total, value) => total + value, 0);
+  let points = 0;
+
+  benchScores.forEach((value) => {
+    points += value;
+  });
 
   return {
     points,
@@ -462,7 +466,7 @@ function scoreInformationCenter(state: GameState) {
 
   return {
     points: builtCells * 4,
-    detail: `${builtCells} elementos junto al puesto de informacion`,
+    detail: `${builtCells} elementos junto al puesto de información`,
   };
 }
 
@@ -494,25 +498,34 @@ function scoreShadedPath(state: GameState) {
 
   return {
     points: longestPath * 2,
-    detail: `Camino sombreado mas largo: ${longestPath} segmentos`,
+    detail: `Camino sombreado más largo: ${longestPath} segmentos`,
   };
 }
 
 // carta 12: caminos con bancos adyacentes
 function scoreFrequentStops(state: GameState) {
   const stopCounts = getPathStopCounts(state);
-  const componentScores = stopCounts.map((benchCount) => {
+  const componentScores: number[] = [];
+
+  stopCounts.forEach((benchCount) => {
     if (benchCount >= 7) {
-      return 20;
+      componentScores.push(20);
+      return;
     }
 
     if (benchCount >= 3) {
-      return (benchCount - 2) * 4;
+      componentScores.push((benchCount - 2) * 4);
+      return;
     }
 
-    return 0;
+    componentScores.push(0);
   });
-  const points = componentScores.reduce((total, value) => total + value, 0);
+
+  let points = 0;
+
+  componentScores.forEach((value) => {
+    points += value;
+  });
 
   return {
     points,
@@ -530,7 +543,7 @@ function noExtraVictoryRequirement(): VictoryRequirementResult {
   return {
     requirement: 'Sin requisito adicional.',
     fulfilled: true,
-    detail: 'Solo cuenta para la suma minima de puntos.',
+    detail: 'Solo cuenta para la suma mínima de puntos.',
   };
 }
 
@@ -573,7 +586,7 @@ function checkCornerForestRequirement(
       'Debe construir un bosque en las inmediaciones de la i que incluya una esquina.',
     fulfilled: Boolean(validForest),
     detail: validForest
-      ? `Bosque valido de ${validForest.length} arboles`
+      ? `Bosque valido de ${validForest.length} árboles`
       : 'No hay bosque conectado entre la i y una esquina',
   };
 }
@@ -629,7 +642,7 @@ function checkFishingRequirement(state: GameState): VictoryRequirementResult {
 
   return {
     requirement:
-      'Debe tener un banco que puntue al menos 6 puntos para esta carta.',
+      'Debe tener un banco que puntúe al menos 6 puntos para esta carta.',
     fulfilled: bestBench >= 6,
     detail: `Mejor banco: ${bestBench} puntos`,
   };
@@ -665,9 +678,9 @@ function checkOneOfEverythingRequirement(
   const minimumCount = Math.min(treeCount, pathCount, waterCount, benchCount);
 
   return {
-    requirement: 'Debe contener al menos 5 de cada tipo de construccion.',
+    requirement: 'Debe contener al menos 5 de cada tipo de construcción.',
     fulfilled: minimumCount >= 5,
-    detail: `${treeCount} arboles, ${pathCount} caminos, ${waterCount} aguas y ${benchCount} bancos`,
+    detail: `${treeCount} árboles, ${pathCount} caminos, ${waterCount} aguas y ${benchCount} bancos`,
   };
 }
 
@@ -699,9 +712,9 @@ function checkFrequentStopsRequirement(
 
   return {
     requirement:
-      'Debe tener 2 caminos distintos, cada uno adyacente a 3 o mas bancos.',
+      'Debe tener 2 caminos distintos, cada uno adyacente a 3 o más bancos.',
     fulfilled: validPathCount >= 2,
-    detail: `${validPathCount} caminos con 3 o mas bancos adyacentes`,
+    detail: `${validPathCount} caminos con 3 o más bancos adyacentes`,
   };
 }
 
@@ -751,50 +764,56 @@ const victoryRequirementFunctions: Record<
 // calcula cada carta y resta las penalizaciones finales
 export function calculateFinalScore(state: GameState): ScoreState {
   const scoringState = getStateForScoringCards(state);
-  const cards: ScoringCardScoreState[] = state.scoringCards.map((card) => {
+  const cards: ScoringCardScoreState[] = [];
+  const victoryRequirements: VictoryRequirementState[] = [];
+  const soloTargetParts: string[] = [];
+  let cardTotal = 0;
+  let soloTarget = 0;
+  let allRequirementsMet = true;
+
+  state.scoringCards.forEach((card) => {
     const scoreCard = scoringFunctions[card.id];
     const result = scoreCard
       ? scoreCard(scoringState)
-      : { points: 0, detail: 'Carta sin calculo implementado' };
+      : { points: 0, detail: 'Carta sin cálculo implementado' };
 
-    return {
+    cards.push({
       cardId: card.id,
       title: card.title,
       points: result.points,
       detail: result.detail,
-    };
+    });
+
+    cardTotal += result.points;
+    soloTarget += card.soloTarget;
+    soloTargetParts.push(String(card.soloTarget));
   });
-  const cardTotal = cards.reduce((total, card) => total + card.points, 0);
+
   const diceModificationPenalty = state.penalties.diceModifications;
   const isolatedRegionCount = countRegionsOutsideInfoBooth(state);
   const isolatedRegionPenalty = isolatedRegionCount * 3;
   const penaltyTotal = diceModificationPenalty + isolatedRegionPenalty;
-  const soloTarget = state.scoringCards.reduce(
-    (total, card) => total + card.soloTarget,
-    0,
-  );
-  const soloTargetBreakdown = state.scoringCards
-    .map((card) => String(card.soloTarget))
-    .join(' + ');
+  const soloTargetBreakdown = soloTargetParts.join(' + ');
   const total = cardTotal - penaltyTotal;
-  const victoryRequirements: VictoryRequirementState[] = state.scoringCards.map(
-    (card) => {
-      const checkRequirement =
-        victoryRequirementFunctions[card.id] ?? noExtraVictoryRequirement;
-      const result = checkRequirement(state);
 
-      return {
-        cardId: card.id,
-        title: card.title,
-        requirement: result.requirement,
-        fulfilled: result.fulfilled,
-        detail: result.detail,
-      };
-    },
-  );
-  const allRequirementsMet = victoryRequirements.every(
-    (requirement) => requirement.fulfilled,
-  );
+  state.scoringCards.forEach((card) => {
+    const checkRequirement =
+      victoryRequirementFunctions[card.id] ?? noExtraVictoryRequirement;
+    const result = checkRequirement(state);
+
+    if (!result.fulfilled) {
+      allRequirementsMet = false;
+    }
+
+    victoryRequirements.push({
+      cardId: card.id,
+      title: card.title,
+      requirement: result.requirement,
+      fulfilled: result.fulfilled,
+      detail: result.detail,
+    });
+  });
+
   const soloTargetReached = total >= soloTarget;
 
   return {
