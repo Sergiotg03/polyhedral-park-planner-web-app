@@ -21,6 +21,7 @@ import { API_URL, TOKEN_KEY } from '../config'
 import type { DevelopmentType, GameSession, User } from '../types'
 
 const HISTORY_PAGE_SIZE = 5
+const HOME_AUTH_TIMEOUT_MS = 4000
 
 const DEVELOPMENT_STATS: Array<{ type: DevelopmentType; label: string }> = [
   { type: 'TREE', label: 'Árboles' },
@@ -157,21 +158,34 @@ function HomePage() {
       return
     }
 
+    let isMounted = true
+    const authController = new AbortController()
+    const authTimeout = window.setTimeout(() => {
+      authController.abort()
+    }, HOME_AUTH_TIMEOUT_MS)
+
     // carga el usuario y sus partidas para mostrar el home completo
     const fetchHomeData = async () => {
       try {
         const userResponse = await fetch(`${API_URL}/auth/me`, {
+          signal: authController.signal,
           headers: {
             Authorization: `Bearer ${token}`,
           },
         })
+        window.clearTimeout(authTimeout)
 
         if (!userResponse.ok) {
           throw new Error('No se pudo obtener el usuario autenticado')
         }
 
         const userData: User = await userResponse.json()
+        if (!isMounted) {
+          return
+        }
+
         setUser(userData)
+        setLoading(false)
 
         try {
           const sessionsResponse = await fetch(`${API_URL}/game-sessions`, {
@@ -185,19 +199,35 @@ function HomePage() {
           }
 
           const sessionsData: GameSession[] = await sessionsResponse.json()
+          if (!isMounted) {
+            return
+          }
+
           setGameSessions(sessionsData)
         } catch {
-          setError('No se pudo cargar el historial de partidas')
+          if (isMounted) {
+            setError('No se pudo cargar el historial de partidas')
+          }
         }
       } catch {
+        window.clearTimeout(authTimeout)
+        if (!isMounted) {
+          return
+        }
+
         localStorage.removeItem(TOKEN_KEY)
         navigate('/login')
-      } finally {
         setLoading(false)
       }
     }
 
     fetchHomeData()
+
+    return () => {
+      isMounted = false
+      window.clearTimeout(authTimeout)
+      authController.abort()
+    }
   }, [navigate])
 
   // cierra sesion borrando el token
