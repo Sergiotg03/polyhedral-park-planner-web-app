@@ -4,78 +4,100 @@
 
 # Polyhedral Park Planner Web App
 
-Repositorio del Trabajo de Fin de Grado del proyecto **Polyhedral Park Planner Web App**.
+Repositorio del Trabajo de Fin de Grado sobre la digitalización del juego **Polyhedral Park Planner**.
 
-La aplicación está dividida en dos partes:
+La aplicación permite registrarse, iniciar sesión, crear partidas, jugar sobre una hoja oficial aleatoria, usar dados, desbloquear y colocar elementos del parque, aplicar penalizaciones, finalizar la partida y consultar el historial con estadísticas generales.
 
-- `frontend/`: cliente web desarrollado con React, Vite, Chakra UI y MobX.
-- `backend/`: API desarrollada con NestJS y TypeScript.
-- Base de datos: PostgreSQL gestionada mediante Prisma.
-- Despliegue: Neon para base de datos, Render para backend y Vercel para frontend.
+## Tecnologías utilizadas
 
-## Requisitos previos
-
-Antes de ejecutar el proyecto en local es necesario tener instalado:
-
-- Node.js 20 o superior
-- npm
-- PostgreSQL
+- Frontend: React, TypeScript, Vite y Chakra UI.
+- Backend: NestJS, TypeScript y Prisma.
+- Base de datos: PostgreSQL.
+- Autenticación: JWT.
+- Despliegue: Vercel para el frontend, Render para el backend y Neon para la base de datos.
 
 ## Estructura del proyecto
 
 ```text
 polyhedral-park-planner-web-app/
-├── frontend/
-├── backend/
+|-- frontend/       Aplicación web
+|-- backend/        API REST
+`-- README.md
 ```
 
-## Configuración del entorno
+## Funcionalidades principales
 
-Para ejecutar el proyecto en local hay que crear un archivo `.env` dentro de `backend/`.
+- Registro e inicio de sesión de usuarios.
+- Protección de rutas mediante token JWT.
+- Creación de partidas asociadas al usuario.
+- Selección aleatoria de una de las 100 hojas del juego.
+- Visualización del tablero de la partida.
+- Tirada de dados por ronda.
+- Modificación de dados con penalización.
+- Relanzamiento de dados con penalización.
+- Desbloqueo de elementos según la suma de dados seleccionados.
+- Colocación de árboles, caminos, agua y bancos en el tablero.
+- Validación de acciones en el backend para evitar movimientos no válidos.
+- Avance de ronda hasta completar las 10 rondas.
+- Cartas de puntuación aleatorias.
+- Cálculo de puntuación final y objetivos de victoria.
+- Historial de partidas en curso y finalizadas.
+- Estadísticas generales de la cuenta.
+
+## Requisitos previos
+
+Para ejecutar el proyecto en local hace falta tener instalado:
+
+- Node.js 20 o superior.
+- npm.
+- Una base de datos PostgreSQL.
+
+## Variables de entorno
+
+Hay que crear un archivo `.env` dentro de `backend/` y otro dentro de `frontend/`.
 
 ### backend/.env
 
 ```env
-PORT=3000
 DATABASE_URL="postgresql://usuario:password@host-pooler/neondb?sslmode=require&channel_binding=require"
 DIRECT_URL="postgresql://usuario:password@host-direct/neondb?sslmode=require&channel_binding=require"
-JWT_SECRET="cambia_esto_por_un_secreto_seguro"
+JWT_SECRET="cambia-esto-por-una-clave-secreta-segura"
+FRONTEND_URL=http://localhost:5173
+PORT=3000
 ```
 
-### Explicación de variables
+### frontend/.env
 
-- `PORT`: puerto en el que se ejecuta el backend.
-- `DATABASE_URL`: conexión principal a la base de datos.
-- `DIRECT_URL`: conexión directa a la base de datos para migraciones con Prisma.
-- `JWT_SECRET`: clave para generar y validar los tokens JWT.
+```env
+VITE_API_URL=http://localhost:3000
+```
 
 ## Instalación
 
-### 1. Instalar dependencias del backend
+Instalar dependencias del backend:
 
 ```bash
 cd backend
 npm install
 ```
 
-### 2. Instalar dependencias del frontend
+Instalar dependencias del frontend:
 
 ```bash
 cd ../frontend
 npm install
 ```
 
-## Preparación de la base de datos
+## Base de datos
 
-Desde la carpeta `backend/`, ejecutar los comandos necesarios de Prisma para aplicar el esquema a la base de datos.
+Desde la carpeta `backend/`, generar el cliente de Prisma y aplicar las migraciones:
 
 ```bash
-cd backend
 npx prisma generate
 npx prisma migrate dev
 ```
 
-Si no se quieren generar nuevas migraciones y solo se desea aplicar las existentes, se puede usar:
+En producción se deben aplicar las migraciones ya existentes:
 
 ```bash
 npx prisma migrate deploy
@@ -83,11 +105,10 @@ npx prisma migrate deploy
 
 ## Ejecución en local
 
-### 1. Iniciar el backend
-
-Desde `backend/`:
+Iniciar el backend:
 
 ```bash
+cd backend
 npm run start:dev
 ```
 
@@ -97,11 +118,10 @@ El backend quedará disponible en:
 http://localhost:3000
 ```
 
-### 2. Iniciar el frontend
-
-Desde `frontend/`:
+Iniciar el frontend:
 
 ```bash
+cd frontend
 npm run dev
 ```
 
@@ -111,23 +131,102 @@ El frontend quedará disponible en:
 http://localhost:5173
 ```
 
+## Scripts útiles
+
+Backend:
+
+```bash
+npm run build
+npm run start:dev
+npm run start:prod
+npm run test
+npm run test:e2e
+```
+
+Frontend:
+
+```bash
+npm run dev
+npm run build
+npm run preview
+npm run lint
+```
+
+## Pruebas automáticas
+
+Las pruebas e2e están divididas por iteraciones:
+
+```text
+backend/test/iteration-1.e2e-spec.ts
+backend/test/iteration-2.e2e-spec.ts
+backend/test/iteration-3.e2e-spec.ts
+backend/test/iteration-4.e2e-spec.ts
+```
+
+Para ejecutar todas las pruebas e2e:
+
+```bash
+cd backend
+npm run test:e2e
+```
+
+Para ejecutar una iteración concreta:
+
+```bash
+npm run test:e2e -- iteration-1.e2e-spec.ts
+npm run test:e2e -- iteration-2.e2e-spec.ts
+npm run test:e2e -- iteration-3.e2e-spec.ts
+npm run test:e2e -- iteration-4.e2e-spec.ts
+```
+
+## Endpoints principales
+
+Autenticación:
+
+```text
+POST /auth/register
+POST /auth/login
+GET  /auth/me
+```
+
+Partidas:
+
+```text
+POST /game-sessions
+GET  /game-sessions
+GET  /game-sessions/:id
+POST /game-sessions/:id/roll-dice
+POST /game-sessions/:id/modify-dice
+POST /game-sessions/:id/reroll-dice
+POST /game-sessions/:id/unlock-development
+POST /game-sessions/:id/place-development
+POST /game-sessions/:id/advance-round
+```
+
 ## Despliegue
 
-La aplicación está desplegada en producción con la siguiente arquitectura:
+La aplicación está preparada para desplegarse con:
 
-- Frontend: Vercel
-- Backend: Render
-- Base de datos: Neon
+- Frontend en Vercel.
+- Backend en Render.
+- Base de datos en Neon.
 
-### URLs de despliegue
+URLs usadas durante el desarrollo:
 
-- Frontend: https://polyhedral-park-planner.vercel.app/
-- Backend: https://polyhedral-park-planner-backend.onrender.com/
+```text
+Frontend: https://polyhedral-park-planner.vercel.app/
+Backend:  https://polyhedral-park-planner-backend.onrender.com/
+```
 
-## Funcionamiento básico
+En Render, el backend debe ejecutar las migraciones antes de arrancar la aplicación. Una forma sencilla es usar como comando de inicio:
 
-La aplicación dispone actualmente de autenticación de usuarios con los siguientes endpoints en el backend:
+```bash
+npx prisma migrate deploy && npm run start:prod
+```
 
-- `POST /auth/register`
-- `POST /auth/login`
-- `GET /auth/me`
+## Notas
+
+- Las acciones importantes de la partida se validan en el servidor.
+- Las estadísticas de victorias, derrotas y puntuaciones máxima y mínima solo usan partidas finalizadas.
+- Las estadísticas generales de partidas y elementos colocados cuentan también partidas en curso.
+- En Render, si el servicio gratuito está inactivo, puede tardar unos minutos en despertar.
