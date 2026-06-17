@@ -330,6 +330,10 @@ export class GameSessionsService {
       throw new BadRequestException('El dado no puede bajar de 1');
     }
 
+    if (nextValue > dice.sides) {
+      throw new BadRequestException(`El dado no puede subir de ${dice.sides}`);
+    }
+
     dice.value = nextValue;
     state.penalties.diceModifications += 1;
 
